@@ -1,6 +1,6 @@
 # Shiba Agent
 
-CLI tools for GitLab & Jira integration with Claude Code agents.
+Unified CLI for GitLab & Jira integration with Claude Code agents.
 
 ## Quick Install
 
@@ -17,11 +17,9 @@ curl -fsSL https://raw.githubusercontent.com/muningis/shiba-agent/main/install.s
    bun install && bun run build
    ```
 
-2. **Link CLIs globally**:
+2. **Link CLI globally**:
    ```bash
    cd src/tools/shiba-cli && bun link && cd ../../..
-   cd src/tools/gitlab-cli && bun link && cd ../../..
-   cd src/tools/jira-cli && bun link && cd ../../..
    ```
 
 3. **Configure credentials** (`~/.shiba-agent/config.json`):
@@ -42,32 +40,42 @@ curl -fsSL https://raw.githubusercontent.com/muningis/shiba-agent/main/install.s
    EOF
    ```
 
-## CLI Tools
+## CLI Commands
 
-### shiba
+### Core
 
 ```bash
-shiba init          # Create shiba.json with GitLab project info
+shiba init          # Create .shiba/config.json with GitLab project info
 shiba tui           # Interactive Jira issue navigator
 ```
 
-### gitlab-cli
+### OpenAPI
 
 ```bash
-gitlab-cli mr-create --project <id> --source <branch> --target <branch> --title <title>
-gitlab-cli mr-list --project <id> --state opened
-gitlab-cli mr-merge --project <id> --iid <iid>
-gitlab-cli pipeline-list --project <id>
-gitlab-cli pipeline-status --project <id> --pipeline-id <id>
+shiba oapi add --name api --url https://api.example.com/openapi.json
+shiba oapi fetch --all
+shiba oapi path "/v1/users/*"
+shiba oapi schema User
+shiba oapi search "authentication"
 ```
 
-### jira-cli
+### GitLab
 
 ```bash
-jira-cli issue-get --key PROJ-123
-jira-cli issue-create --project PROJ --type Task --summary "Title"
-jira-cli issue-transition --key PROJ-123 --transition "In Progress"
-jira-cli issue-search --jql "assignee = currentUser()"
+shiba gitlab mr-create --project <id> --source <branch> --target <branch> --title <title>
+shiba gitlab mr-list --project <id> --state opened
+shiba gitlab mr-merge --project <id> --iid <iid>
+shiba gitlab pipeline-list --project <id>
+shiba gitlab pipeline-status --project <id> --pipeline-id <id>
+```
+
+### Jira
+
+```bash
+shiba jira issue-get --key PROJ-123
+shiba jira issue-create --project PROJ --type Task --summary "Title"
+shiba jira issue-transition --key PROJ-123 --transition "In Progress"
+shiba jira issue-search --jql "assignee = currentUser()"
 ```
 
 ## Claude Code Agents

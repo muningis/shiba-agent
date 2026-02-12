@@ -1,7 +1,6 @@
 # Shiba Agent — GitLab & Jira CLI for Claude Code
 
-This repository provides CLI tools (`shiba`, `gitlab-cli`, and `jira-cli`)
-designed to be invoked by Claude Code agents from any project.
+This repository provides the `shiba` CLI tool designed to be invoked by Claude Code agents from any project.
 
 ## Quick Install
 
@@ -28,10 +27,8 @@ bun install
 # 3. Build all packages
 bun run build
 
-# 4. Link globally so the CLIs work from anywhere
+# 4. Link globally so the CLI works from anywhere
 cd src/tools/shiba-cli && bun link && cd ../../..
-cd src/tools/gitlab-cli && bun link && cd ../../..
-cd src/tools/jira-cli && bun link && cd ../../..
 
 # 5. Symlink agent definitions to ~/.claude/agents/
 mkdir -p ~/.claude/agents
@@ -74,59 +71,65 @@ shiba-agent/
 │   ├── agents/           # Agent definitions (symlinked to ~/.claude/agents/)
 │   ├── packages/shared/  # Shared library
 │   └── tools/
-│       ├── shiba-cli/    # Main CLI (shiba init, shiba tui)
-│       ├── gitlab-cli/
-│       └── jira-cli/
+│       └── shiba-cli/    # Unified CLI (init, tui, oapi, gitlab, jira)
 ├── install.sh
 ├── package.json
 └── tsconfig.base.json
 ```
 
-## CLI Tools Reference
+## CLI Reference
 
-### shiba
+All output is JSON to stdout.
 
-Main CLI for project setup and task navigation.
+### Core Commands
 
 | Command | Purpose | Key Flags |
 |---------|---------|-----------|
 | `shiba init` | Initialize project config | `--force` |
 | `shiba tui` | Interactive task navigator | — |
 
-**shiba init** detects the GitLab project from git remote and creates `shiba.json`:
+**shiba init** detects the GitLab project from git remote and creates `.shiba/config.json`:
 ```json
 { "repository": "group/project-name" }
 ```
 
 **shiba tui** launches an interactive terminal UI to navigate your Jira issues.
 
-### gitlab-cli
-
-Invoked via Bash. All output is JSON to stdout.
+### OpenAPI Commands (`shiba oapi`)
 
 | Command | Purpose | Key Flags |
 |---------|---------|-----------|
-| `gitlab-cli mr-create` | Create merge request | `--project`, `--source`, `--target`, `--title` |
-| `gitlab-cli mr-list` | List merge requests | `--project`, `--state`, `--limit` |
-| `gitlab-cli mr-merge` | Merge an MR | `--project`, `--iid`, `--squash` |
-| `gitlab-cli mr-comment` | Comment on MR | `--project`, `--iid`, `--body` |
-| `gitlab-cli pipeline-status` | Get pipeline + jobs | `--project`, `--pipeline-id` |
-| `gitlab-cli pipeline-list` | List pipelines | `--project`, `--ref`, `--limit` |
+| `shiba oapi list` | List configured specs | — |
+| `shiba oapi add` | Add spec source | `--name`, `--url`, `--auth-token` |
+| `shiba oapi fetch` | Fetch/update specs | `--name` or `--all` |
+| `shiba oapi path <pattern>` | Find endpoints by path | `--spec` |
+| `shiba oapi schema [name]` | Query schemas | `--list`, `--spec` |
+| `shiba oapi search <query>` | Search paths & schemas | `--type`, `--spec` |
+| `shiba oapi remove` | Remove a spec | `--name` |
 
-Run `gitlab-cli <command> --help` for full option details.
-
-### jira-cli
+### GitLab Commands (`shiba gitlab`)
 
 | Command | Purpose | Key Flags |
 |---------|---------|-----------|
-| `jira-cli issue-get` | Get issue details | `--key` |
-| `jira-cli issue-create` | Create issue | `--project`, `--type`, `--summary` |
-| `jira-cli issue-transition` | Change status | `--key`, `--transition` |
-| `jira-cli issue-comment` | Add comment | `--key`, `--body` |
-| `jira-cli issue-search` | JQL search | `--jql`, `--max-results` |
-| `jira-cli issue-assign` | Assign issue | `--key`, `--assignee` |
+| `shiba gitlab mr-create` | Create merge request | `--project`, `--source`, `--target`, `--title` |
+| `shiba gitlab mr-list` | List merge requests | `--project`, `--state`, `--limit` |
+| `shiba gitlab mr-merge` | Merge an MR | `--project`, `--iid`, `--squash` |
+| `shiba gitlab mr-comment` | Comment on MR | `--project`, `--iid`, `--body` |
+| `shiba gitlab pipeline-status` | Get pipeline + jobs | `--project`, `--pipeline-id` |
+| `shiba gitlab pipeline-list` | List pipelines | `--project`, `--ref`, `--limit` |
 
-Run `jira-cli <command> --help` for full option details.
+### Jira Commands (`shiba jira`)
+
+| Command | Purpose | Key Flags |
+|---------|---------|-----------|
+| `shiba jira issue-get` | Get issue details | `--key` |
+| `shiba jira issue-create` | Create issue | `--project`, `--type`, `--summary` |
+| `shiba jira issue-transition` | Change status | `--key`, `--transition` |
+| `shiba jira issue-comment` | Add comment | `--key`, `--body` |
+| `shiba jira issue-search` | JQL search | `--jql`, `--max-results` |
+| `shiba jira issue-assign` | Assign issue | `--key`, `--assignee` |
+
+Run `shiba <command> --help` for full option details.
 
 ## JSON Output Convention
 

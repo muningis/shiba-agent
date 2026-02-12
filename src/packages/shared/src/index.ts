@@ -10,7 +10,11 @@ export {
   getConfigDir,
   ensureConfigDir,
 } from "./config/global.js";
-export type { GlobalConfig } from "./config/global.js";
+export type {
+  GlobalConfig,
+  OpenAPIAuthConfig,
+  OpenAPISpecConfig,
+} from "./config/global.js";
 
 // Output
 export { successResponse, errorResponse } from "./output/json.js";

@@ -2,6 +2,19 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 
+export interface OpenAPIAuthConfig {
+  type: "bearer" | "basic" | "apikey";
+  token?: string;
+  username?: string;
+  password?: string;
+  headerName?: string;
+}
+
+export interface OpenAPISpecConfig {
+  url: string;
+  auth?: OpenAPIAuthConfig;
+}
+
 export interface GlobalConfig {
   gitlab?: {
     host?: string;
@@ -11,6 +24,9 @@ export interface GlobalConfig {
     host?: string;
     email?: string;
     token?: string;
+  };
+  openapi?: {
+    specs?: Record<string, OpenAPISpecConfig>;
   };
   preferences?: {
     defaultJql?: string;
