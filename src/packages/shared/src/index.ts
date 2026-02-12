@@ -13,19 +13,42 @@ export {
   saveGlobalConfig,
   getConfigPath,
   getConfigDir,
+  getDataDir,
   getOapiDir,
   getIssuesDir,
   getFigmaDir,
+  getGlabDir,
+  getJiraDir,
   getRepoRoot,
   ensureConfigDir,
+  ensureDataDir,
   ensureIssuesDir,
   ensureFigmaDir,
+  ensureOapiDir,
+  ensureGlabDir,
+  ensureJiraDir,
+  getCurrentEnvironment,
+  isDataInitialized,
 } from "./config/global.js";
 export type {
   GlobalConfig,
   OpenAPIAuthConfig,
   OpenAPISpecConfig,
 } from "./config/global.js";
+
+// Preferences
+export {
+  getDefaultPreferences,
+  DEFAULT_BRANCH_PATTERN,
+  DEFAULT_COMMIT_STYLE,
+  DEFAULT_SHIBA_SIGNATURE,
+} from "./config/preferences.js";
+export type {
+  ShibaPreferences,
+  BranchNamingConfig,
+  CommitMessageConfig,
+  SignatureConfig,
+} from "./config/preferences.js";
 
 // Output
 export { successResponse, errorResponse } from "./output/json.js";

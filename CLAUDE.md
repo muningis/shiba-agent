@@ -45,27 +45,102 @@ git pull
 ./setup.sh
 ```
 
+## Environment Isolation
+
+Shiba uses git branches to isolate data between environments (work, home, client projects). Each environment has its own:
+- Config and preferences
+- Cached OpenAPI specs
+- Tracked Jira issues
+- Figma cache
+- GitLab CLI (`glab`) authentication
+- Jira CLI authentication
+
+### Quick Start
+
+```bash
+# Create and switch to an environment
+shiba env create work
+shiba env use work      # Interactive confirmation required
+
+# Configure CLIs for this environment
+glab auth login         # Authenticates in work environment
+jira init               # Configures Jira for work
+
+# Create another environment
+shiba env create home
+shiba env use home
+glab auth login         # Different GitLab account
+jira init               # Different Jira instance
+```
+
+### Environment Commands
+
+| Command | Purpose | Notes |
+|---------|---------|-------|
+| `shiba env init` | Initialize data directory | Run automatically by setup.sh |
+| `shiba env create <name>` | Create new environment | |
+| `shiba env use <name>` | Switch environment | **Interactive** - requires typing 'yes' |
+| `shiba env list` | List all environments | |
+| `shiba env current` | Show current environment | |
+| `shiba env delete <name>` | Delete environment | **Interactive** - requires confirmation |
+| `shiba env migrate` | Migrate legacy data | For upgrades from older versions |
+
+**Security:** `shiba env use` requires interactive confirmation that Claude Code cannot provide. This prevents accidental data leakage between environments.
+
 ## Configuration
 
-Authentication is handled by the underlying CLIs (`glab` and `jira`).
+Authentication is handled by the underlying CLIs (`glab` and `jira`), isolated per environment.
 
-For optional preferences, edit `~/.shiba-agent/config/config.json`:
+### Preferences
+
+Preferences are stored per-environment in `~/.shiba-agent/data/config.json`, with per-project overrides in `.shiba/config.json`.
 
 ```json
 {
   "preferences": {
-    "defaultJql": "assignee = currentUser() AND status != Done"
+    "defaultJql": "assignee = currentUser() AND status != Done",
+    "branchNaming": {
+      "pattern": "{key}/{description}"
+    },
+    "commitMessage": {
+      "style": "conventional"
+    },
+    "signatures": {
+      "shibaSignature": false
+    }
   }
 }
+```
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `branchNaming.pattern` | Branch name template. Placeholders: `{key}`, `{description}`, `{type}` | `{key}/{description}` |
+| `commitMessage.style` | `conventional` or `custom` | `conventional` |
+| `commitMessage.template` | Custom template (when style=custom). Placeholders: `{key}`, `{type}`, `{scope}`, `{description}` | — |
+| `signatures.shibaSignature` | Add 🐕 Shiba Agent signature to comments | `false` |
+
+Use `shiba config` commands to manage settings:
+
+```bash
+shiba config show                    # Show effective config
+shiba config show --global           # Show global config only
+shiba config set branch-pattern "feature/{key}" --global
+shiba config set commit-style conventional
+shiba config set shiba-signature on
 ```
 
 ## Project Structure
 
 ```
 ~/.shiba-agent/
-├── config/               # User config (gitignored)
-│   └── config.json       # GitLab/Jira credentials
-├── oapi/                 # Cached OpenAPI specs (gitignored)
+├── data/                 # Git repo for environment data
+│   ├── .git/             # Local git (branch = environment)
+│   ├── config.json       # Per-environment preferences
+│   ├── oapi/             # Cached OpenAPI specs
+│   ├── issues/           # Tracked Jira issues
+│   ├── figma/            # Cached Figma files
+│   ├── glab/             # GitLab CLI config (symlinked from ~/.config/glab-cli)
+│   └── jira/             # Jira CLI config (symlinked from ~/.config/.jira)
 ├── src/
 │   ├── agents/           # Agent definitions (symlinked to ~/.claude/agents/)
 │   ├── packages/shared/  # Shared library
@@ -84,6 +159,10 @@ All output is JSON to stdout.
 |---------|---------|-----------|
 | `shiba init` | Initialize project config | `--force` |
 | `shiba tui` | Interactive task navigator | — |
+| `shiba branch` | Generate branch name | `--key`, `--description`, `--type` |
+| `shiba commit-msg` | Generate commit message | `--type`, `--description`, `--key`, `--scope` |
+| `shiba config show` | Show configuration | `--global`, `--project` |
+| `shiba config set` | Set configuration value | `--key`, `--value`, `--global` |
 
 **shiba init** detects the GitLab project from git remote and creates `.shiba/config.json`:
 ```json
@@ -128,7 +207,7 @@ All output is JSON to stdout.
 
 ### Issue Tracking Commands (`shiba issue`)
 
-Local issue tracking for agent workflow. Issue files are stored in `.shiba/issues/<KEY>.json`.
+Local issue tracking for agent workflow. Issue files are stored in `~/.shiba-agent/data/issues/<KEY>.json` (per-environment).
 
 | Command | Purpose | Key Flags |
 |---------|---------|-----------|

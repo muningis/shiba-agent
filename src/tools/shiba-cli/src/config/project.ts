@@ -1,8 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
+import type { ShibaPreferences } from "@shiba-agent/shared";
 
 export interface ProjectConfig {
   repository: string;
+  preferences?: ShibaPreferences; // Project-level overrides
 }
 
 const CONFIG_DIR = ".shiba";

@@ -1,6 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, lstatSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { homedir } from "os";
+import { execSync } from "child_process";
+import type { ShibaPreferences } from "./preferences.js";
 
 export interface OpenAPIAuthConfig {
   type: "bearer" | "basic" | "apikey";
@@ -16,24 +19,13 @@ export interface OpenAPISpecConfig {
 }
 
 export interface GlobalConfig {
-  gitlab?: {
-    host?: string;
-    token?: string;
-  };
-  jira?: {
-    host?: string;
-    email?: string;
-    token?: string;
-  };
   figma?: {
     token?: string;
   };
   openapi?: {
     specs?: Record<string, OpenAPISpecConfig>;
   };
-  preferences?: {
-    defaultJql?: string;
-  };
+  preferences?: ShibaPreferences;
 }
 
 // Find the shiba-agent repo root by navigating up from this file
@@ -76,11 +68,21 @@ function findRepoRoot(): string {
 }
 
 const REPO_ROOT = findRepoRoot();
+const DATA_DIR = join(homedir(), ".shiba-agent", "data");
+
+// Data paths now point to ~/.shiba-agent/data/ (git-managed per environment)
+function getDataDir(): string {
+  return DATA_DIR;
+}
+
+// Legacy paths (kept for backwards compatibility during migration)
 const CONFIG_DIR = join(REPO_ROOT, "config");
-const CONFIG_FILE = join(CONFIG_DIR, "config.json");
-const OAPI_DIR = join(REPO_ROOT, "oapi");
-const ISSUES_DIR = join(REPO_ROOT, "issues");
-const FIGMA_DIR = join(REPO_ROOT, "figma");
+const CONFIG_FILE = join(DATA_DIR, "config.json");
+const OAPI_DIR = join(DATA_DIR, "oapi");
+const ISSUES_DIR = join(DATA_DIR, "issues");
+const FIGMA_DIR = join(DATA_DIR, "figma");
+const GLAB_DIR = join(DATA_DIR, "glab");
+const JIRA_DIR = join(DATA_DIR, "jira");
 
 export function getConfigDir(): string {
   return CONFIG_DIR;
@@ -106,10 +108,24 @@ export function getRepoRoot(): string {
   return REPO_ROOT;
 }
 
-export function ensureConfigDir(): void {
-  if (!existsSync(CONFIG_DIR)) {
-    mkdirSync(CONFIG_DIR, { recursive: true });
+export { getDataDir };
+
+export function getGlabDir(): string {
+  return GLAB_DIR;
+}
+
+export function getJiraDir(): string {
+  return JIRA_DIR;
+}
+
+export function ensureDataDir(): void {
+  if (!existsSync(DATA_DIR)) {
+    mkdirSync(DATA_DIR, { recursive: true });
   }
+}
+
+export function ensureConfigDir(): void {
+  ensureDataDir();
 }
 
 export function ensureIssuesDir(): void {
@@ -122,6 +138,50 @@ export function ensureFigmaDir(): void {
   if (!existsSync(FIGMA_DIR)) {
     mkdirSync(FIGMA_DIR, { recursive: true });
   }
+}
+
+export function ensureOapiDir(): void {
+  if (!existsSync(OAPI_DIR)) {
+    mkdirSync(OAPI_DIR, { recursive: true });
+  }
+}
+
+export function ensureGlabDir(): void {
+  if (!existsSync(GLAB_DIR)) {
+    mkdirSync(GLAB_DIR, { recursive: true });
+  }
+}
+
+export function ensureJiraDir(): void {
+  if (!existsSync(JIRA_DIR)) {
+    mkdirSync(JIRA_DIR, { recursive: true });
+  }
+}
+
+/**
+ * Get the current environment name (git branch in data/)
+ * Returns null if data/ is not a git repo or has no branches
+ */
+export function getCurrentEnvironment(): string | null {
+  if (!existsSync(join(DATA_DIR, ".git"))) {
+    return null;
+  }
+  try {
+    const branch = execSync("git branch --show-current", {
+      cwd: DATA_DIR,
+      encoding: "utf-8",
+    }).trim();
+    return branch || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if data directory is initialized as a git repo
+ */
+export function isDataInitialized(): boolean {
+  return existsSync(join(DATA_DIR, ".git"));
 }
 
 export function loadGlobalConfig(): GlobalConfig {

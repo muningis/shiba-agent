@@ -1,4 +1,5 @@
 import { execCli, requireCli, successResponse, errorResponse } from "@shiba-agent/shared";
+import { appendCommentSignature } from "../config/resolve.js";
 
 const GLAB_CLI = "glab";
 const GLAB_INSTALL_HINT = "brew install glab";
@@ -153,7 +154,8 @@ export interface MRCommentOpts {
 export async function mrComment(opts: MRCommentOpts): Promise<void> {
   requireCli(GLAB_CLI, GLAB_INSTALL_HINT);
 
-  const args = ["mr", "note", opts.iid, "-m", opts.body];
+  const signedBody = appendCommentSignature(opts.body);
+  const args = ["mr", "note", opts.iid, "-m", signedBody];
   if (opts.project) args.push("-R", opts.project);
 
   const result = execCli(GLAB_CLI, args);
@@ -164,7 +166,7 @@ export async function mrComment(opts: MRCommentOpts): Promise<void> {
 
   successResponse({
     noteId: 0,
-    body: opts.body,
+    body: signedBody,
     author: { name: "unknown", username: "unknown" },
     createdAt: new Date().toISOString(),
   });

@@ -8,6 +8,7 @@ import {
   type JiraComment as IssueJiraComment,
   type JiraLinkedIssue,
 } from "../issues/index.js";
+import { appendCommentSignature } from "../config/resolve.js";
 
 const JIRA_CLI = "jira";
 const JIRA_INSTALL_HINT = "brew install ankitpokhrel/jira-cli/jira-cli";
@@ -262,7 +263,8 @@ export interface IssueCommentOpts {
 export async function issueComment(opts: IssueCommentOpts): Promise<void> {
   requireCli(JIRA_CLI, JIRA_INSTALL_HINT);
 
-  const result = execCli(JIRA_CLI, ["issue", "comment", "add", opts.key, "-b", opts.body]);
+  const signedBody = appendCommentSignature(opts.body);
+  const result = execCli(JIRA_CLI, ["issue", "comment", "add", opts.key, "-b", signedBody]);
 
   if (result.exitCode !== 0) {
     errorResponse("COMMENT_FAILED", result.stderr || "Failed to add comment");
@@ -271,7 +273,7 @@ export async function issueComment(opts: IssueCommentOpts): Promise<void> {
   successResponse({
     id: "",
     issueKey: opts.key,
-    body: opts.body,
+    body: signedBody,
     created: new Date().toISOString(),
   });
 }

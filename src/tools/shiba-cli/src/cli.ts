@@ -41,6 +41,18 @@ import {
   issueAddRequirement,
 } from "./commands/issue.js";
 import { createFigmaCommands } from "./commands/figma.js";
+import { configShow, configSet } from "./commands/config.js";
+import { branch } from "./commands/branch.js";
+import { commitMsg } from "./commands/commit.js";
+import {
+  envInit,
+  envCreate,
+  envUse,
+  envList,
+  envCurrent,
+  envDelete,
+  envMigrate,
+} from "./commands/env.js";
 
 const program = new Command()
   .name("shiba")
@@ -615,5 +627,154 @@ issue
 
 // Figma commands
 program.addCommand(createFigmaCommands());
+
+// Config commands
+const config = program
+  .command("config")
+  .description("Configuration management");
+
+config
+  .command("show")
+  .description("Show current configuration")
+  .option("--global", "Show only global config")
+  .option("--project", "Show only project config")
+  .action(async (opts) => {
+    try {
+      await configShow({ global: opts.global, project: opts.project });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+config
+  .command("set <key> <value>")
+  .description("Set a configuration value")
+  .option("--global", "Set in global config (default: project)")
+  .option("--template <template>", "Template for custom commit style")
+  .action(async (key, value, opts) => {
+    try {
+      await configSet({ key, value, global: opts.global, template: opts.template });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+// Branch command
+program
+  .command("branch")
+  .description("Generate a branch name from configured pattern")
+  .requiredOption("--key <key>", "Issue key (e.g. PROJ-123)")
+  .option("--description <text>", "Branch description")
+  .option("--type <type>", "Branch type (e.g. feature, fix)")
+  .action(async (opts) => {
+    try {
+      await branch({ key: opts.key, description: opts.description, type: opts.type });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+// Commit message command
+program
+  .command("commit-msg")
+  .description("Generate a commit message from configured style")
+  .requiredOption("--type <type>", "Commit type (e.g. feat, fix, docs)")
+  .requiredOption("--description <text>", "Commit description")
+  .option("--key <key>", "Issue key (used as scope if no --scope)")
+  .option("--scope <scope>", "Commit scope")
+  .action(async (opts) => {
+    try {
+      await commitMsg({
+        type: opts.type,
+        description: opts.description,
+        key: opts.key,
+        scope: opts.scope,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+// Environment commands
+const env = program
+  .command("env")
+  .description("Environment management for data isolation");
+
+env
+  .command("init")
+  .description("Initialize the data directory as a git repository")
+  .action(async () => {
+    try {
+      await envInit();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+env
+  .command("create <name>")
+  .description("Create a new environment")
+  .action(async (name) => {
+    try {
+      await envCreate({ name });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+env
+  .command("use <name>")
+  .description("Switch to an environment (requires interactive confirmation)")
+  .action(async (name) => {
+    try {
+      await envUse({ name });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+env
+  .command("list")
+  .description("List all environments")
+  .action(async () => {
+    try {
+      await envList();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+env
+  .command("current")
+  .description("Show the current environment")
+  .action(async () => {
+    try {
+      await envCurrent();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+env
+  .command("delete <name>")
+  .description("Delete an environment (requires interactive confirmation)")
+  .action(async (name) => {
+    try {
+      await envDelete({ name });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+env
+  .command("migrate")
+  .description("Migrate existing data to the new environment structure")
+  .action(async () => {
+    try {
+      await envMigrate();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
 
 program.parse();

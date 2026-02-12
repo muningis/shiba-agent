@@ -4,7 +4,7 @@ set -e
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENTS_DIR="$HOME/.claude/agents"
-CONFIG_FILE="$SCRIPT_DIR/config/config.json"
+DATA_DIR="$HOME/.shiba-agent/data"
 
 echo "Setting up Shiba Agent..."
 
@@ -63,36 +63,34 @@ for skill_dir in "$SCRIPT_DIR/src/skills"/*; do
     fi
 done
 
-# Create config file if it doesn't exist
-if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Creating config file template..."
-    cat > "$CONFIG_FILE" << 'EOF'
-{
-  "gitlab": {
-    "host": "https://gitlab.example.com",
-    "token": "glpat-xxxxxxxxxxxx"
-  },
-  "jira": {
-    "host": "https://your-domain.atlassian.net",
-    "email": "you@example.com",
-    "token": "your-api-token"
-  }
-}
-EOF
-    echo "  Created: $CONFIG_FILE"
+# Initialize data directory (for environment isolation)
+if [ ! -d "$DATA_DIR/.git" ]; then
+    echo "Initializing data directory..."
+    mkdir -p "$DATA_DIR"
+    cd "$DATA_DIR"
+    git init
+    git commit --allow-empty -m "Initialize shiba data repository"
+
+    # Create directory structure
+    mkdir -p oapi issues figma glab jira
+    echo "  Created: $DATA_DIR"
 fi
 
 echo ""
 echo "Setup complete!"
 echo ""
 echo "Next steps:"
-echo "  1. Edit the config file with your credentials:"
-echo "     $CONFIG_FILE"
+echo "  1. Create your first environment:"
+echo "     shiba env create work"
+echo "     shiba env use work"
 echo ""
-echo "  2. Verify installation:"
+echo "  2. Configure GitLab and Jira CLIs for this environment:"
+echo "     glab auth login"
+echo "     jira init"
+echo ""
+echo "  3. Verify installation:"
 echo "     shiba --help"
-echo "     shiba gitlab --help"
-echo "     shiba jira --help"
+echo "     shiba env --help"
 echo ""
 echo "To update later, run: git pull && ./setup.sh"
 echo ""
