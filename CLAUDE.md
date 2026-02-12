@@ -40,28 +40,31 @@ ln -s "$(pwd)/src/agents/jira-agent.md" ~/.claude/agents/
 ln -s "$(pwd)/src/agents/project-manager.md" ~/.claude/agents/
 ```
 
-## Environment Variables
+## Configuration
 
-Add to your `~/.bashrc` or `~/.zshrc`:
+Create `~/.shiba-agent/config.json`:
 
-```bash
-# GitLab
-export GITLAB_HOST=https://gitlab.example.com
-export GITLAB_TOKEN=glpat-xxxxxxxxxxxx
-
-# Jira
-export JIRA_HOST=https://your-domain.atlassian.net
-export JIRA_EMAIL=you@example.com
-export JIRA_TOKEN=your-api-token
+```json
+{
+  "gitlab": {
+    "host": "https://gitlab.example.com",
+    "token": "glpat-xxxxxxxxxxxx"
+  },
+  "jira": {
+    "host": "https://your-domain.atlassian.net",
+    "email": "you@example.com",
+    "token": "your-api-token"
+  }
+}
 ```
 
-| Variable | Description | How to get it |
-|----------|-------------|---------------|
-| `GITLAB_HOST` | GitLab instance URL | Your GitLab URL |
-| `GITLAB_TOKEN` | Personal access token (api scope) | GitLab → Settings → Access Tokens |
-| `JIRA_HOST` | Jira Cloud URL | Your Atlassian URL |
-| `JIRA_EMAIL` | Atlassian account email | Your login email |
-| `JIRA_TOKEN` | API token | https://id.atlassian.com/manage/api-tokens |
+| Field | Description | How to get it |
+|-------|-------------|---------------|
+| `gitlab.host` | GitLab instance URL | Your GitLab URL |
+| `gitlab.token` | Personal access token (api scope) | GitLab → Settings → Access Tokens |
+| `jira.host` | Jira Cloud URL | Your Atlassian URL |
+| `jira.email` | Atlassian account email | Your login email |
+| `jira.token` | API token | https://id.atlassian.com/manage/api-tokens |
 
 ## Project Structure
 

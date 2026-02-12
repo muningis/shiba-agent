@@ -3,13 +3,13 @@ import { join } from "path";
 import { homedir } from "os";
 
 export interface GlobalConfig {
+  gitlab?: {
+    host?: string;
+    token?: string;
+  };
   jira?: {
     host?: string;
     email?: string;
-    token?: string;
-  };
-  gitlab?: {
-    host?: string;
     token?: string;
   };
   preferences?: {
@@ -24,7 +24,11 @@ export function getConfigDir(): string {
   return CONFIG_DIR;
 }
 
-export function ensureGlobalConfigDir(): void {
+export function getConfigPath(): string {
+  return CONFIG_FILE;
+}
+
+export function ensureConfigDir(): void {
   if (!existsSync(CONFIG_DIR)) {
     mkdirSync(CONFIG_DIR, { recursive: true });
   }
@@ -44,6 +48,6 @@ export function loadGlobalConfig(): GlobalConfig {
 }
 
 export function saveGlobalConfig(config: GlobalConfig): void {
-  ensureGlobalConfigDir();
+  ensureConfigDir();
   writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2) + "\n");
 }

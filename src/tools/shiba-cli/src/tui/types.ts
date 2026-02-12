@@ -1,4 +1,4 @@
-import type { GlobalConfig } from "../config/global.js";
+import type { GlobalConfig } from "@shiba-agent/shared";
 
 export type { GlobalConfig };
 
