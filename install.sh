@@ -4,6 +4,8 @@ set -e
 REPO="muningis/shiba-agent"
 INSTALL_DIR="$HOME/.shiba-agent"
 AGENTS_DIR="$HOME/.claude/agents"
+CONFIG_DIR="$HOME/.shiba-agent"
+CONFIG_FILE="$CONFIG_DIR/config.json"
 
 echo "Installing Shiba Agent..."
 
@@ -34,12 +36,8 @@ bun install
 echo "Building packages..."
 bun run build
 
-# Link CLI tools globally
-echo "Linking CLI tools..."
-cd "$INSTALL_DIR/src/tools/gitlab-cli"
-bun link
-cd "$INSTALL_DIR/src/tools/jira-cli"
-bun link
+# Link CLI tool globally
+echo "Linking CLI tool..."
 cd "$INSTALL_DIR/src/tools/shiba-cli"
 bun link
 
@@ -58,25 +56,34 @@ for agent in "$INSTALL_DIR/src/agents"/*.md; do
     echo "  Linked: $name"
 done
 
+# Create config file if it doesn't exist
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Creating config file template..."
+    cat > "$CONFIG_FILE" << 'EOF'
+{
+  "gitlab": {
+    "host": "https://gitlab.example.com",
+    "token": "glpat-xxxxxxxxxxxx"
+  },
+  "jira": {
+    "host": "https://your-domain.atlassian.net",
+    "email": "you@example.com",
+    "token": "your-api-token"
+  }
+}
+EOF
+    echo "  Created: $CONFIG_FILE"
+fi
+
 echo ""
 echo "Installation complete!"
 echo ""
 echo "Next steps:"
-echo "  1. Add the following environment variables to your shell profile:"
+echo "  1. Edit the config file with your credentials:"
+echo "     $CONFIG_FILE"
 echo ""
-echo "     # GitLab"
-echo "     export GITLAB_HOST=https://gitlab.example.com"
-echo "     export GITLAB_TOKEN=glpat-xxxxxxxxxxxx"
-echo ""
-echo "     # Jira"
-echo "     export JIRA_HOST=https://your-domain.atlassian.net"
-echo "     export JIRA_EMAIL=you@example.com"
-echo "     export JIRA_TOKEN=your-api-token"
-echo ""
-echo "  2. Restart your terminal or run: source ~/.bashrc (or ~/.zshrc)"
-echo ""
-echo "  3. Verify installation:"
+echo "  2. Verify installation:"
 echo "     shiba --help"
-echo "     gitlab-cli --help"
-echo "     jira-cli --help"
+echo "     shiba gitlab --help"
+echo "     shiba jira --help"
 echo ""
