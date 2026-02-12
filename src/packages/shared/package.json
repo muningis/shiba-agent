@@ -1,0 +1,26 @@
+{
+  "name": "@agent-tools/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./auth/gitlab": "./dist/auth/gitlab.js",
+    "./auth/jira": "./dist/auth/jira.js",
+    "./output": "./dist/output/json.js",
+    "./types": "./dist/types/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@gitbeaker/rest": "^40.5.0",
+    "jira.js": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
