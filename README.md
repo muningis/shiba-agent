@@ -2,43 +2,46 @@
 
 Unified CLI for GitLab & Jira integration with Claude Code agents.
 
-## Quick Install
+## Installation
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/muningis/shiba-agent/main/install.sh | sh
+git clone https://github.com/muningis/shiba-agent.git ~/.shiba-agent
+cd ~/.shiba-agent
+./setup.sh
 ```
 
-## Setup
+This will:
+1. Install bun if needed
+2. Build the CLI
+3. Link `shiba` command globally
+4. Symlink agent definitions to `~/.claude/agents/`
+5. Create a config template at `config/config.json`
 
-1. **Install** (requires [bun](https://bun.sh)):
-   ```bash
-   git clone https://github.com/muningis/shiba-agent.git
-   cd shiba-agent
-   bun install && bun run build
-   ```
+## Configuration
 
-2. **Link CLI globally**:
-   ```bash
-   cd src/tools/shiba-cli && bun link && cd ../../..
-   ```
+Edit `~/.shiba-agent/config/config.json` with your credentials:
 
-3. **Configure credentials** (`~/.shiba-agent/config.json`):
-   ```bash
-   mkdir -p ~/.shiba-agent
-   cat > ~/.shiba-agent/config.json << 'EOF'
-   {
-     "gitlab": {
-       "host": "https://gitlab.example.com",
-       "token": "glpat-xxxxxxxxxxxx"
-     },
-     "jira": {
-       "host": "https://your-domain.atlassian.net",
-       "email": "you@example.com",
-       "token": "your-api-token"
-     }
-   }
-   EOF
-   ```
+```json
+{
+  "gitlab": {
+    "host": "https://gitlab.example.com",
+    "token": "glpat-xxxxxxxxxxxx"
+  },
+  "jira": {
+    "host": "https://your-domain.atlassian.net",
+    "email": "you@example.com",
+    "token": "your-api-token"
+  }
+}
+```
+
+## Updating
+
+```bash
+cd ~/.shiba-agent
+git pull
+./setup.sh
+```
 
 ## CLI Commands
 
@@ -80,12 +83,7 @@ shiba jira issue-search --jql "assignee = currentUser()"
 
 ## Claude Code Agents
 
-Copy agents to `~/.claude/agents/` for global availability:
-
-```bash
-mkdir -p ~/.claude/agents
-ln -s "$(pwd)/src/agents/"*.md ~/.claude/agents/
-```
+The setup script automatically links agents to `~/.claude/agents/`:
 
 - **gitlab-agent** — MRs, pipelines, code review
 - **jira-agent** — Issues, transitions, JQL searches

@@ -2,44 +2,31 @@
 
 This repository provides the `shiba` CLI tool designed to be invoked by Claude Code agents from any project.
 
-## Quick Install
+## Installation
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/muningis/shiba-agent/main/install.sh | sh
+git clone https://github.com/muningis/shiba-agent.git ~/.shiba-agent
+cd ~/.shiba-agent
+./setup.sh
 ```
 
 This will:
 1. Install bun if not present
-2. Clone the repository to `~/.shiba-agent`
-3. Build and link the CLI tools globally
-4. Symlink agent definitions to `~/.claude/agents/`
+2. Build and link the CLI tool globally
+3. Symlink agent definitions to `~/.claude/agents/`
+4. Create config template at `config/config.json`
 
-## Manual Setup
+## Updating
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/muningis/shiba-agent.git
-cd shiba-agent
-
-# 2. Install dependencies
-bun install
-
-# 3. Build all packages
-bun run build
-
-# 4. Link globally so the CLI works from anywhere
-cd src/tools/shiba-cli && bun link && cd ../../..
-
-# 5. Symlink agent definitions to ~/.claude/agents/
-mkdir -p ~/.claude/agents
-ln -s "$(pwd)/src/agents/gitlab-agent.md" ~/.claude/agents/
-ln -s "$(pwd)/src/agents/jira-agent.md" ~/.claude/agents/
-ln -s "$(pwd)/src/agents/project-manager.md" ~/.claude/agents/
+cd ~/.shiba-agent
+git pull
+./setup.sh
 ```
 
 ## Configuration
 
-Create `~/.shiba-agent/config.json`:
+Edit `~/.shiba-agent/config/config.json`:
 
 ```json
 {
@@ -66,15 +53,16 @@ Create `~/.shiba-agent/config.json`:
 ## Project Structure
 
 ```
-shiba-agent/
+~/.shiba-agent/
+├── config/               # User config (gitignored)
+│   └── config.json       # GitLab/Jira credentials
+├── oapi/                 # Cached OpenAPI specs (gitignored)
 ├── src/
 │   ├── agents/           # Agent definitions (symlinked to ~/.claude/agents/)
 │   ├── packages/shared/  # Shared library
-│   └── tools/
-│       └── shiba-cli/    # Unified CLI (init, tui, oapi, gitlab, jira)
-├── install.sh
-├── package.json
-└── tsconfig.base.json
+│   └── tools/shiba-cli/  # Unified CLI
+├── setup.sh              # Post-clone setup script
+└── ...
 ```
 
 ## CLI Reference

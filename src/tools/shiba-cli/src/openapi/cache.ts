@@ -1,16 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "fs";
 import { join } from "path";
-import { getConfigDir, ensureConfigDir } from "@shiba-agent/shared";
+import { getOapiDir } from "@shiba-agent/shared";
 import type { OpenAPISpec, CachedSpec } from "./types.js";
 
-const OPENAPI_DIR = "openapi";
-
 export function getOpenAPIDir(): string {
-  return join(getConfigDir(), OPENAPI_DIR);
+  return getOapiDir();
 }
 
 export function ensureOpenAPIDir(): void {
-  ensureConfigDir();
   const dir = getOpenAPIDir();
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });

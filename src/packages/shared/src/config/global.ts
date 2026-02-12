@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
-import { homedir } from "os";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 export interface OpenAPIAuthConfig {
   type: "bearer" | "basic" | "apikey";
@@ -33,8 +33,49 @@ export interface GlobalConfig {
   };
 }
 
-const CONFIG_DIR = join(homedir(), ".shiba-agent");
+// Find the shiba-agent repo root by navigating up from this file
+// This file is at: <repo>/src/packages/shared/src/config/global.ts (source)
+// or at: <repo>/src/packages/shared/dist/config/global.js (compiled)
+function findRepoRoot(): string {
+  const currentFile = fileURLToPath(import.meta.url);
+  let dir = dirname(currentFile);
+
+  // Navigate up until we find package.json with name containing "shiba-agent"
+  // or a setup.sh file (indicators of repo root)
+  for (let i = 0; i < 10; i++) {
+    const packageJsonPath = join(dir, "package.json");
+    const setupShPath = join(dir, "setup.sh");
+
+    if (existsSync(setupShPath)) {
+      return dir;
+    }
+
+    if (existsSync(packageJsonPath)) {
+      try {
+        const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+        // Check if this is a workspace root (has workspaces) or the main package
+        if (pkg.workspaces || pkg.name === "shiba-agent") {
+          return dir;
+        }
+      } catch {
+        // Continue searching
+      }
+    }
+
+    const parent = dirname(dir);
+    if (parent === dir) break; // Reached filesystem root
+    dir = parent;
+  }
+
+  // Fallback: assume we're 5 levels deep from repo root
+  // src/packages/shared/dist/config/global.js -> 5 levels up
+  return dirname(dirname(dirname(dirname(dirname(currentFile)))));
+}
+
+const REPO_ROOT = findRepoRoot();
+const CONFIG_DIR = join(REPO_ROOT, "config");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
+const OAPI_DIR = join(REPO_ROOT, "oapi");
 
 export function getConfigDir(): string {
   return CONFIG_DIR;
@@ -42,6 +83,14 @@ export function getConfigDir(): string {
 
 export function getConfigPath(): string {
   return CONFIG_FILE;
+}
+
+export function getOapiDir(): string {
+  return OAPI_DIR;
+}
+
+export function getRepoRoot(): string {
+  return REPO_ROOT;
 }
 
 export function ensureConfigDir(): void {

@@ -8,6 +8,8 @@ export {
   saveGlobalConfig,
   getConfigPath,
   getConfigDir,
+  getOapiDir,
+  getRepoRoot,
   ensureConfigDir,
 } from "./config/global.js";
 export type {

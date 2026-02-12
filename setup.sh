@@ -1,13 +1,12 @@
 #!/bin/bash
 set -e
 
-REPO="muningis/shiba-agent"
-INSTALL_DIR="$HOME/.shiba-agent"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENTS_DIR="$HOME/.claude/agents"
-CONFIG_DIR="$HOME/.shiba-agent"
-CONFIG_FILE="$CONFIG_DIR/config.json"
+CONFIG_FILE="$SCRIPT_DIR/config/config.json"
 
-echo "Installing Shiba Agent..."
+echo "Setting up Shiba Agent..."
 
 # Check for bun, install if missing
 if ! command -v bun &> /dev/null; then
@@ -17,19 +16,9 @@ if ! command -v bun &> /dev/null; then
     export PATH="$BUN_INSTALL/bin:$PATH"
 fi
 
-# Clone or update repository
-if [ -d "$INSTALL_DIR" ]; then
-    echo "Updating existing installation..."
-    cd "$INSTALL_DIR"
-    git pull origin main
-else
-    echo "Cloning repository..."
-    git clone "https://github.com/$REPO.git" "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
-fi
-
 # Install dependencies
 echo "Installing dependencies..."
+cd "$SCRIPT_DIR"
 bun install
 
 # Build packages
@@ -38,7 +27,7 @@ bun run build
 
 # Link CLI tool globally
 echo "Linking CLI tool..."
-cd "$INSTALL_DIR/src/tools/shiba-cli"
+cd "$SCRIPT_DIR/src/tools/shiba-cli"
 bun link
 
 # Create agents directory if it doesn't exist
@@ -46,7 +35,7 @@ mkdir -p "$AGENTS_DIR"
 
 # Symlink agent definitions
 echo "Symlinking agent definitions..."
-for agent in "$INSTALL_DIR/src/agents"/*.md; do
+for agent in "$SCRIPT_DIR/src/agents"/*.md; do
     name=$(basename "$agent")
     target="$AGENTS_DIR/$name"
     if [ -L "$target" ] || [ -f "$target" ]; then
@@ -76,7 +65,7 @@ EOF
 fi
 
 echo ""
-echo "Installation complete!"
+echo "Setup complete!"
 echo ""
 echo "Next steps:"
 echo "  1. Edit the config file with your credentials:"
@@ -86,4 +75,6 @@ echo "  2. Verify installation:"
 echo "     shiba --help"
 echo "     shiba gitlab --help"
 echo "     shiba jira --help"
+echo ""
+echo "To update later, run: git pull && ./setup.sh"
 echo ""

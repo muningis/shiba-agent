@@ -3,3 +3,7 @@ dist/
 .env
 .env.local
 *.tsbuildinfo
+config/*
+!config/.gitkeep
+oapi/*
+!oapi/.gitkeep
