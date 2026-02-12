@@ -316,7 +316,10 @@ jira
   .option("--no-track", "Skip creating/updating local issue tracking file")
   .action(async (opts) => {
     try {
-      await issueGet({ key: opts.key, noTrack: !opts.track });
+      await issueGet({
+        key: opts.key,
+        noTrack: !opts.track,
+      });
     } catch (err) {
       handleCliError(err);
     }

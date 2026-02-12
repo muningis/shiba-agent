@@ -1,6 +1,10 @@
-// Auth
-export { getGitlabClient } from "./auth/gitlab.js";
-export { getJiraClient } from "./auth/jira.js";
+// Environment
+export { getEnv, requireEnv } from "./env.js";
+
+// CLI execution
+export { execCli, requireCli, type CliResult } from "./cli/exec.js";
+
+// Auth (only Figma - GitLab/Jira use CLIs)
 export { getFigmaToken } from "./auth/figma.js";
 
 // Config

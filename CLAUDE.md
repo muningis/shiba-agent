@@ -2,6 +2,28 @@
 
 This repository provides the `shiba` CLI tool designed to be invoked by Claude Code agents from any project.
 
+## Prerequisites
+
+Shiba wraps official CLIs for GitLab and Jira. Install them first:
+
+```bash
+# GitLab CLI (glab)
+brew install glab
+
+# Jira CLI (jira-cli by ankitpokhrel)
+brew install ankitpokhrel/jira-cli/jira-cli
+```
+
+Then configure each CLI:
+
+```bash
+# GitLab: authenticate with your instance
+glab auth login
+
+# Jira: initialize configuration
+jira init
+```
+
 ## Installation
 
 ```bash
@@ -14,7 +36,6 @@ This will:
 1. Install bun if not present
 2. Build and link the CLI tool globally
 3. Symlink agent definitions to `~/.claude/agents/`
-4. Create config template at `config/config.json`
 
 ## Updating
 
@@ -26,29 +47,17 @@ git pull
 
 ## Configuration
 
-Edit `~/.shiba-agent/config/config.json`:
+Authentication is handled by the underlying CLIs (`glab` and `jira`).
+
+For optional preferences, edit `~/.shiba-agent/config/config.json`:
 
 ```json
 {
-  "gitlab": {
-    "host": "https://gitlab.example.com",
-    "token": "glpat-xxxxxxxxxxxx"
-  },
-  "jira": {
-    "host": "https://your-domain.atlassian.net",
-    "email": "you@example.com",
-    "token": "your-api-token"
+  "preferences": {
+    "defaultJql": "assignee = currentUser() AND status != Done"
   }
 }
 ```
-
-| Field | Description | How to get it |
-|-------|-------------|---------------|
-| `gitlab.host` | GitLab instance URL | Your GitLab URL |
-| `gitlab.token` | Personal access token (api scope) | GitLab → Settings → Access Tokens |
-| `jira.host` | Jira Cloud URL | Your Atlassian URL |
-| `jira.email` | Atlassian account email | Your login email |
-| `jira.token` | API token | https://id.atlassian.com/manage/api-tokens |
 
 ## Project Structure
 

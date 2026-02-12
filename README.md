@@ -2,6 +2,25 @@
 
 Unified CLI for GitLab & Jira integration with Claude Code agents.
 
+## Prerequisites
+
+Shiba wraps official CLIs. Install them first:
+
+```bash
+# GitLab CLI
+brew install glab
+
+# Jira CLI
+brew install ankitpokhrel/jira-cli/jira-cli
+```
+
+Then configure each:
+
+```bash
+glab auth login  # GitLab authentication
+jira init        # Jira configuration
+```
+
 ## Installation
 
 ```bash
@@ -15,25 +34,6 @@ This will:
 2. Build the CLI
 3. Link `shiba` command globally
 4. Symlink agent definitions to `~/.claude/agents/`
-5. Create a config template at `config/config.json`
-
-## Configuration
-
-Edit `~/.shiba-agent/config/config.json` with your credentials:
-
-```json
-{
-  "gitlab": {
-    "host": "https://gitlab.example.com",
-    "token": "glpat-xxxxxxxxxxxx"
-  },
-  "jira": {
-    "host": "https://your-domain.atlassian.net",
-    "email": "you@example.com",
-    "token": "your-api-token"
-  }
-}
-```
 
 ## Updating
 
@@ -62,7 +62,7 @@ shiba oapi schema User
 shiba oapi search "authentication"
 ```
 
-### GitLab
+### GitLab (wraps glab)
 
 ```bash
 shiba gitlab mr-create --project <id> --source <branch> --target <branch> --title <title>
@@ -72,13 +72,22 @@ shiba gitlab pipeline-list --project <id>
 shiba gitlab pipeline-status --project <id> --pipeline-id <id>
 ```
 
-### Jira
+### Jira (wraps jira-cli)
 
 ```bash
 shiba jira issue-get --key PROJ-123
 shiba jira issue-create --project PROJ --type Task --summary "Title"
 shiba jira issue-transition --key PROJ-123 --transition "In Progress"
 shiba jira issue-search --jql "assignee = currentUser()"
+```
+
+### Figma
+
+```bash
+shiba figma file-get --file-key <key>
+shiba figma node-get --file-key <key> --node-ids <ids>
+shiba figma styles --file-key <key>
+shiba figma components --file-key <key>
 ```
 
 ## Claude Code Agents

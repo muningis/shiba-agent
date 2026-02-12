@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { getJiraClient } from "@shiba-agent/shared";
+import { execCli, requireCli } from "@shiba-agent/shared";
 import type { JiraIssueBasic } from "../types.js";
+
+const JIRA_CLI = "jira";
+const JIRA_INSTALL_HINT = "brew install ankitpokhrel/jira-cli/jira-cli";
 
 interface UseJiraIssuesResult {
   issues: JiraIssueBasic[];
@@ -19,24 +22,37 @@ export function useJiraIssues(): UseJiraIssuesResult {
     setError(null);
 
     try {
-      const jira = getJiraClient();
+      requireCli(JIRA_CLI, JIRA_INSTALL_HINT);
 
-      // Search for issues assigned to current user
-      const results = await jira.issueSearch.searchForIssuesUsingJql({
-        jql: "assignee = currentUser() AND resolution = Unresolved ORDER BY updated DESC",
-        maxResults: 50,
-        fields: ["summary", "status", "priority", "issuetype", "updated"],
+      // Use jira-cli to list issues assigned to current user
+      const result = execCli(JIRA_CLI, [
+        "issue",
+        "list",
+        "-a$(jira me)",
+        "-sopen",
+        "--plain",
+        "--columns",
+        "KEY,SUMMARY,STATUS,PRIORITY,TYPE,UPDATED",
+      ]);
+
+      if (result.exitCode !== 0) {
+        throw new Error(result.stderr || "Failed to fetch issues");
+      }
+
+      // Parse plain text output
+      const lines = result.stdout.trim().split("\n").filter(Boolean);
+      const fetchedIssues: JiraIssueBasic[] = lines.slice(1).map((line) => {
+        const parts = line.split(/\t|\s{2,}/); // Split by tab or 2+ spaces
+        return {
+          key: parts[0] ?? "",
+          id: parts[0] ?? "",
+          summary: parts[1] ?? "",
+          status: parts[2] ?? "Unknown",
+          priority: parts[3] ?? "None",
+          issueType: parts[4] ?? "Unknown",
+          updated: parts[5] ?? "",
+        };
       });
-
-      const fetchedIssues: JiraIssueBasic[] = (results.issues ?? []).map((issue) => ({
-        key: issue.key ?? "",
-        id: issue.id ?? "",
-        summary: (issue.fields as Record<string, unknown>).summary as string,
-        status: ((issue.fields as Record<string, unknown>).status as Record<string, unknown>)?.name as string ?? "Unknown",
-        priority: ((issue.fields as Record<string, unknown>).priority as Record<string, unknown>)?.name as string ?? "None",
-        issueType: ((issue.fields as Record<string, unknown>).issuetype as Record<string, unknown>)?.name as string ?? "Unknown",
-        updated: (issue.fields as Record<string, unknown>).updated as string ?? "",
-      }));
 
       setIssues(fetchedIssues);
     } catch (err) {
