@@ -107,7 +107,7 @@ Common error codes and what to do:
 
 | Code | Meaning | Recovery |
 |------|---------|----------|
-| `MISSING_ENV` | Credentials not set | Tell user to export the variable |
+| `MISSING_CONFIG` | Credentials not set | Tell user to configure credentials in `~/.shiba-agent/config/config.json` |
 | `UNAUTHORIZED` | Token invalid | Ask user to regenerate API token |
 | `NOT_FOUND` | Issue key invalid | Verify the key format (PROJ-123) |
 | `INVALID_TRANSITION` | Status change not allowed | Error lists available transitions — suggest one |

@@ -15,6 +15,8 @@ export interface FigmaNode {
   name: string;
   type: string;
   children?: FigmaNode[];
+  // Style references (maps style type like "fill", "text" to style key)
+  styles?: Record<string, string>;
   // Style properties (when applicable)
   fills?: FigmaPaint[];
   strokes?: FigmaPaint[];

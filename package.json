@@ -10,7 +10,8 @@
   "scripts": {
     "build": "bun run --cwd src/packages/shared build && bun run --filter '@shiba-agent/*-cli' build",
     "clean": "bun run --filter '*' clean",
-    "dev": "bun run --filter '*' dev"
+    "dev": "bun run --filter '*' dev",
+    "test": "bun test --recursive"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

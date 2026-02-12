@@ -1,3 +1,4 @@
+import { withRetry } from "@shiba-agent/shared";
 import type { OpenAPISpecConfig } from "@shiba-agent/shared";
 import { dereference, validate } from "@scalar/openapi-parser";
 import type { OpenAPISpec } from "./types.js";
@@ -10,6 +11,10 @@ export interface FetchResult {
 
 export async function fetchSpec(config: OpenAPISpecConfig): Promise<OpenAPISpec> {
   const result = await fetchAndValidateSpec(config);
+  if (!result.valid) {
+    const msgs = result.errors?.join("; ") ?? "Unknown validation error";
+    throw new Error(`Invalid OpenAPI spec: ${msgs}`);
+  }
   return result.spec;
 }
 
@@ -42,15 +47,17 @@ export async function fetchAndValidateSpec(config: OpenAPISpecConfig): Promise<F
     }
   }
 
-  const response = await fetch(config.url, { headers });
+  const text = await withRetry(async () => {
+    const response = await fetch(config.url, { headers });
 
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch spec: ${response.status} ${response.statusText}`
-    );
-  }
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch spec: ${response.status} ${response.statusText}`
+      );
+    }
 
-  const text = await response.text();
+    return response.text();
+  }, "openapi-fetch");
 
   // Use @scalar/openapi-parser for validation and dereferencing
   // It handles both JSON and YAML automatically
