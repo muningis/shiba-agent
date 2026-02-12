@@ -1,5 +1,5 @@
 {
-  "name": "@agent-tools/gitlab-cli",
+  "name": "@shiba-agent/gitlab-cli",
   "version": "1.0.0",
   "type": "module",
   "bin": {
@@ -11,7 +11,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@agent-tools/shared": "workspace:*",
+    "@shiba-agent/shared": "workspace:*",
     "commander": "^12.1.0"
   },
   "devDependencies": {

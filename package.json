@@ -1,5 +1,5 @@
 {
-  "name": "agent-tools",
+  "name": "shiba-agent",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
     "src/tools/*"
   ],
   "scripts": {
-    "build": "bun run --cwd src/packages/shared build && bun run --filter '@agent-tools/*-cli' build",
+    "build": "bun run --cwd src/packages/shared build && bun run --filter '@shiba-agent/*-cli' build",
     "clean": "bun run --filter '*' clean",
     "dev": "bun run --filter '*' dev"
   },

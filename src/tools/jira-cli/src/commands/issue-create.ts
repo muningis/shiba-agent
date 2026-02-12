@@ -1,5 +1,5 @@
-import { getJiraClient, successResponse, errorResponse } from "@agent-tools/shared";
-import type { JiraIssueCreated } from "@agent-tools/shared";
+import { getJiraClient, successResponse, errorResponse } from "@shiba-agent/shared";
+import type { JiraIssueCreated } from "@shiba-agent/shared";
 
 interface IssueCreateOpts {
   project: string;

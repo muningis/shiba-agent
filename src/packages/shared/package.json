@@ -1,5 +1,5 @@
 {
-  "name": "@agent-tools/shared",
+  "name": "@shiba-agent/shared",
   "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.js",

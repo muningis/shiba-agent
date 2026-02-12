@@ -1,5 +1,5 @@
-import { getGitlabClient, successResponse } from "@agent-tools/shared";
-import type { GitlabPipelineSummary } from "@agent-tools/shared";
+import { getGitlabClient, successResponse } from "@shiba-agent/shared";
+import type { GitlabPipelineSummary } from "@shiba-agent/shared";
 
 interface PipelineListOpts {
   project: string;

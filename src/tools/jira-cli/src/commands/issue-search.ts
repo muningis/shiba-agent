@@ -1,5 +1,5 @@
-import { getJiraClient, successResponse } from "@agent-tools/shared";
-import type { JiraIssueSummary } from "@agent-tools/shared";
+import { getJiraClient, successResponse } from "@shiba-agent/shared";
+import type { JiraIssueSummary } from "@shiba-agent/shared";
 
 interface IssueSearchOpts {
   jql: string;

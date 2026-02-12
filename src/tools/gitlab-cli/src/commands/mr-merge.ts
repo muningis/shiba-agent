@@ -1,4 +1,4 @@
-import { getGitlabClient, successResponse } from "@agent-tools/shared";
+import { getGitlabClient, successResponse } from "@shiba-agent/shared";
 
 interface MRMergeOpts {
   project: string;

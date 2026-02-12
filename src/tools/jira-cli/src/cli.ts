@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { handleCliError } from "@agent-tools/shared";
+import { handleCliError } from "@shiba-agent/shared";
 import { issueGet } from "./commands/issue-get.js";
 import { issueCreate } from "./commands/issue-create.js";
 import { issueTransition } from "./commands/issue-transition.js";

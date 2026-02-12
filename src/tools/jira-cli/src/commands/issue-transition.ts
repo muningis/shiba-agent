@@ -1,5 +1,5 @@
-import { getJiraClient, successResponse, errorResponse } from "@agent-tools/shared";
-import type { JiraTransitionResult } from "@agent-tools/shared";
+import { getJiraClient, successResponse, errorResponse } from "@shiba-agent/shared";
+import type { JiraTransitionResult } from "@shiba-agent/shared";
 
 interface IssueTransitionOpts {
   key: string;

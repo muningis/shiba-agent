@@ -1,5 +1,5 @@
-import { getGitlabClient, successResponse } from "@agent-tools/shared";
-import type { GitlabMRSummary } from "@agent-tools/shared";
+import { getGitlabClient, successResponse } from "@shiba-agent/shared";
+import type { GitlabMRSummary } from "@shiba-agent/shared";
 
 interface MRListOpts {
   project: string;

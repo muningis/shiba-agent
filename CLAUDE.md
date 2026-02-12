@@ -1,17 +1,17 @@
-# Agent Tools — GitLab & Jira CLI for Claude Code
+# Shiba Agent — GitLab & Jira CLI for Claude Code
 
-This repository provides two globally-installed CLI tools (`gitlab-cli` and `jira-cli`)
+This repository provides CLI tools (`shiba`, `gitlab-cli`, and `jira-cli`)
 designed to be invoked by Claude Code agents from any project.
 
 ## Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/muningis/agent-tools/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/muningis/shiba-agent/main/install.sh | sh
 ```
 
 This will:
 1. Install bun if not present
-2. Clone the repository to `~/.agent-tools`
+2. Clone the repository to `~/.shiba-agent`
 3. Build and link the CLI tools globally
 4. Symlink agent definitions to `~/.claude/agents/`
 
@@ -19,8 +19,8 @@ This will:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/muningis/agent-tools.git
-cd agent-tools
+git clone https://github.com/muningis/shiba-agent.git
+cd shiba-agent
 
 # 2. Install dependencies
 bun install
@@ -29,6 +29,7 @@ bun install
 bun run build
 
 # 4. Link globally so the CLIs work from anywhere
+cd src/tools/shiba-cli && bun link && cd ../../..
 cd src/tools/gitlab-cli && bun link && cd ../../..
 cd src/tools/jira-cli && bun link && cd ../../..
 
@@ -65,11 +66,12 @@ export JIRA_TOKEN=your-api-token
 ## Project Structure
 
 ```
-agent-tools/
+shiba-agent/
 ├── src/
 │   ├── agents/           # Agent definitions (symlinked to ~/.claude/agents/)
 │   ├── packages/shared/  # Shared library
 │   └── tools/
+│       ├── shiba-cli/    # Main CLI (shiba init, shiba tui)
 │       ├── gitlab-cli/
 │       └── jira-cli/
 ├── install.sh
@@ -78,6 +80,22 @@ agent-tools/
 ```
 
 ## CLI Tools Reference
+
+### shiba
+
+Main CLI for project setup and task navigation.
+
+| Command | Purpose | Key Flags |
+|---------|---------|-----------|
+| `shiba init` | Initialize project config | `--force` |
+| `shiba tui` | Interactive task navigator | — |
+
+**shiba init** detects the GitLab project from git remote and creates `shiba.json`:
+```json
+{ "repository": "group/project-name" }
+```
+
+**shiba tui** launches an interactive terminal UI to navigate your Jira issues.
 
 ### gitlab-cli
 

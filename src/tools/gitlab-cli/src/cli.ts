@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { handleCliError } from "@agent-tools/shared";
+import { handleCliError } from "@shiba-agent/shared";
 import { mrCreate } from "./commands/mr-create.js";
 import { mrList } from "./commands/mr-list.js";
 import { mrMerge } from "./commands/mr-merge.js";

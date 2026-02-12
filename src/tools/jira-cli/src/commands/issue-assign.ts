@@ -1,4 +1,4 @@
-import { getJiraClient, successResponse } from "@agent-tools/shared";
+import { getJiraClient, successResponse } from "@shiba-agent/shared";
 
 interface IssueAssignOpts {
   key: string;

@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-REPO="muningis/agent-tools"
-INSTALL_DIR="$HOME/.agent-tools"
+REPO="muningis/shiba-agent"
+INSTALL_DIR="$HOME/.shiba-agent"
 AGENTS_DIR="$HOME/.claude/agents"
 
-echo "Installing Agent Tools..."
+echo "Installing Shiba Agent..."
 
 # Check for bun, install if missing
 if ! command -v bun &> /dev/null; then
@@ -39,6 +39,8 @@ echo "Linking CLI tools..."
 cd "$INSTALL_DIR/src/tools/gitlab-cli"
 bun link
 cd "$INSTALL_DIR/src/tools/jira-cli"
+bun link
+cd "$INSTALL_DIR/src/tools/shiba-cli"
 bun link
 
 # Create agents directory if it doesn't exist
@@ -74,6 +76,7 @@ echo ""
 echo "  2. Restart your terminal or run: source ~/.bashrc (or ~/.zshrc)"
 echo ""
 echo "  3. Verify installation:"
+echo "     shiba --help"
 echo "     gitlab-cli --help"
 echo "     jira-cli --help"
 echo ""
