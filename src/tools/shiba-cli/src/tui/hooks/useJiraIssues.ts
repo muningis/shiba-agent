@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { getJiraClient } from "@shiba-agent/shared";
-import type { JiraIssue } from "../types.js";
+import type { JiraIssueBasic } from "../types.js";
 
 interface UseJiraIssuesResult {
-  issues: JiraIssue[];
+  issues: JiraIssueBasic[];
   loading: boolean;
   error: string | null;
   refresh: () => void;
 }
 
 export function useJiraIssues(): UseJiraIssuesResult {
-  const [issues, setIssues] = useState<JiraIssue[]>([]);
+  const [issues, setIssues] = useState<JiraIssueBasic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +28,7 @@ export function useJiraIssues(): UseJiraIssuesResult {
         fields: ["summary", "status", "priority", "issuetype", "updated"],
       });
 
-      const fetchedIssues: JiraIssue[] = (results.issues ?? []).map((issue) => ({
+      const fetchedIssues: JiraIssueBasic[] = (results.issues ?? []).map((issue) => ({
         key: issue.key ?? "",
         id: issue.id ?? "",
         summary: (issue.fields as Record<string, unknown>).summary as string,

@@ -1,11 +1,11 @@
 import React from "react";
 import { Box, Text } from "ink";
 import SelectInput from "ink-select-input";
-import type { JiraIssue } from "../types.js";
+import type { JiraIssueBasic } from "../types.js";
 
 interface IssueListProps {
-  issues: JiraIssue[];
-  onSelect: (issue: JiraIssue) => void;
+  issues: JiraIssueBasic[];
+  onSelect: (issue: JiraIssueBasic) => void;
 }
 
 export function IssueList({ issues, onSelect }: IssueListProps) {

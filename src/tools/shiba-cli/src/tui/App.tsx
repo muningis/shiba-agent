@@ -5,14 +5,21 @@ import { IssueList } from "./components/IssueList.js";
 import { IssueDetail } from "./components/IssueDetail.js";
 import { StatusBar } from "./components/StatusBar.js";
 import { useJiraIssues } from "./hooks/useJiraIssues.js";
-import type { JiraIssue, View } from "./types.js";
+import { useFullIssue } from "./hooks/useFullIssue.js";
+import type { JiraIssueBasic, View } from "./types.js";
 
 export function App() {
   const { exit } = useApp();
   const [view, setView] = useState<View>("list");
-  const [selectedIssue, setSelectedIssue] = useState<JiraIssue | null>(null);
+  const [selectedIssueKey, setSelectedIssueKey] = useState<string | null>(null);
 
   const { issues, loading, error, refresh } = useJiraIssues();
+  const {
+    issue: fullIssue,
+    loading: loadingFull,
+    error: errorFull,
+    refresh: refreshFull,
+  } = useFullIssue(view === "detail" ? selectedIssueKey : null);
 
   useInput((input, key) => {
     if (input === "q") {
@@ -20,15 +27,19 @@ export function App() {
     }
     if (key.escape && view === "detail") {
       setView("list");
-      setSelectedIssue(null);
+      setSelectedIssueKey(null);
     }
-    if (input === "r" && view === "list") {
-      refresh();
+    if (input === "r") {
+      if (view === "list") {
+        refresh();
+      } else if (view === "detail") {
+        refreshFull();
+      }
     }
   });
 
-  const handleSelectIssue = (issue: JiraIssue) => {
-    setSelectedIssue(issue);
+  const handleSelectIssue = (issue: JiraIssueBasic) => {
+    setSelectedIssueKey(issue.key);
     setView("detail");
   };
 
@@ -59,8 +70,25 @@ export function App() {
           <IssueList issues={issues} onSelect={handleSelectIssue} />
         )}
 
-        {view === "detail" && selectedIssue && (
-          <IssueDetail issue={selectedIssue} />
+        {view === "detail" && (
+          <>
+            {loadingFull && (
+              <Box padding={1}>
+                <Text color="yellow">
+                  <Spinner type="dots" />
+                  {" "}Loading issue details...
+                </Text>
+              </Box>
+            )}
+            {errorFull && (
+              <Box padding={1}>
+                <Text color="red">Error: {errorFull}</Text>
+              </Box>
+            )}
+            {!loadingFull && !errorFull && fullIssue && (
+              <IssueDetail issue={fullIssue} />
+            )}
+          </>
         )}
       </Box>
 

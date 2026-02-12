@@ -1,7 +1,13 @@
 import { execSync } from "child_process";
-import { existsSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { successResponse, errorResponse } from "@shiba-agent/shared";
-import { getProjectConfigPath, saveProjectConfig, type ProjectConfig } from "../config/project.js";
+import {
+  getProjectConfigPath,
+  getConfigDir,
+  saveProjectConfig,
+  ensureProjectDirs,
+  type ProjectConfig,
+} from "../config/project.js";
 
 interface InitOpts {
   force?: boolean;
@@ -12,7 +18,7 @@ export async function init(opts: InitOpts): Promise<void> {
 
   // Check if config already exists
   if (existsSync(configPath) && !opts.force) {
-    errorResponse("CONFIG_EXISTS", ".shiba.json already exists. Use --force to overwrite.", {
+    errorResponse("CONFIG_EXISTS", ".shiba/config.json already exists. Use --force to overwrite.", {
       path: configPath,
     });
   }
@@ -28,13 +34,43 @@ export async function init(opts: InitOpts): Promise<void> {
 
   const config: ProjectConfig = { repository };
 
+  // Create .shiba/ directory structure
+  ensureProjectDirs();
+
+  // Save config
   saveProjectConfig(config);
 
+  // Add .shiba/tasks/ to .gitignore if not present
+  updateGitignore();
+
   successResponse({
-    message: "Initialized .shiba.json",
+    message: "Initialized .shiba/config.json",
     config,
     path: configPath,
+    configDir: getConfigDir(),
   });
+}
+
+function updateGitignore(): void {
+  const gitignorePath = ".gitignore";
+  const tasksPattern = ".shiba/tasks/";
+
+  let content = "";
+  if (existsSync(gitignorePath)) {
+    content = readFileSync(gitignorePath, "utf-8");
+  }
+
+  // Check if already present
+  if (content.includes(tasksPattern)) {
+    return;
+  }
+
+  // Append to gitignore
+  const newContent = content.endsWith("\n") || content === ""
+    ? content + tasksPattern + "\n"
+    : content + "\n" + tasksPattern + "\n";
+
+  writeFileSync(gitignorePath, newContent);
 }
 
 function detectGitlabProject(): string | null {
