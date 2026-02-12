@@ -1,6 +1,6 @@
 # Shiba Agent
 
-Unified CLI for GitLab & Jira integration with Claude Code agents.
+Unified CLI for GitLab & Jira integration with Claude Code agents. Features environment isolation to keep work and personal data separate.
 
 ## Prerequisites
 
@@ -12,13 +12,6 @@ brew install glab
 
 # Jira CLI
 brew install ankitpokhrel/jira-cli/jira-cli
-```
-
-Then configure each:
-
-```bash
-glab auth login  # GitLab authentication
-jira init        # Jira configuration
 ```
 
 ## Installation
@@ -34,6 +27,23 @@ This will:
 2. Build the CLI
 3. Link `shiba` command globally
 4. Symlink agent definitions to `~/.claude/agents/`
+5. Initialize data directory for environment isolation
+
+## Environment Setup
+
+Shiba uses git branches to isolate data between environments (work, home, clients):
+
+```bash
+# Create and switch to an environment
+shiba env create work
+shiba env use work      # Interactive confirmation required
+
+# Configure CLIs for this environment
+glab auth login         # GitLab auth stored per-environment
+jira init               # Jira config stored per-environment
+```
+
+Each environment has isolated: config, issues, OpenAPI specs, Figma cache, and CLI auth.
 
 ## Updating
 
@@ -45,11 +55,24 @@ git pull
 
 ## CLI Commands
 
+### Environment
+
+```bash
+shiba env list          # List all environments
+shiba env create <name> # Create new environment
+shiba env use <name>    # Switch environment (interactive)
+shiba env current       # Show current environment
+shiba env delete <name> # Delete environment (interactive)
+```
+
 ### Core
 
 ```bash
-shiba init          # Create .shiba/config.json with GitLab project info
-shiba tui           # Interactive Jira issue navigator
+shiba init              # Create .shiba/config.json with GitLab project info
+shiba tui               # Interactive Jira issue navigator
+shiba branch --key PROJ-123 --description "add feature"  # Generate branch name
+shiba commit-msg --type feat --description "add login"   # Generate commit message
+shiba config show       # Show effective configuration
 ```
 
 ### OpenAPI
@@ -90,6 +113,16 @@ shiba figma styles --file-key <key>
 shiba figma components --file-key <key>
 ```
 
+## Configuration
+
+Preferences can be set per-environment or per-project:
+
+```bash
+shiba config set branch-pattern "feature/{key}"  # Branch naming pattern
+shiba config set commit-style conventional       # Commit message style
+shiba config set shiba-signature on              # Add signature to comments
+```
+
 ## Claude Code Agents
 
 The setup script automatically links agents to `~/.claude/agents/`:
@@ -97,6 +130,8 @@ The setup script automatically links agents to `~/.claude/agents/`:
 - **gitlab-agent** — MRs, pipelines, code review
 - **jira-agent** — Issues, transitions, JQL searches
 - **project-manager** — Orchestrates cross-system workflows
+
+**Security:** `shiba env use` requires interactive confirmation that Claude Code cannot provide, preventing accidental data leakage between environments.
 
 ## License
 
