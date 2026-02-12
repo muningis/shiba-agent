@@ -25,6 +25,9 @@ export interface GlobalConfig {
     email?: string;
     token?: string;
   };
+  figma?: {
+    token?: string;
+  };
   openapi?: {
     specs?: Record<string, OpenAPISpecConfig>;
   };
@@ -77,6 +80,7 @@ const CONFIG_DIR = join(REPO_ROOT, "config");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 const OAPI_DIR = join(REPO_ROOT, "oapi");
 const ISSUES_DIR = join(REPO_ROOT, "issues");
+const FIGMA_DIR = join(REPO_ROOT, "figma");
 
 export function getConfigDir(): string {
   return CONFIG_DIR;
@@ -94,6 +98,10 @@ export function getIssuesDir(): string {
   return ISSUES_DIR;
 }
 
+export function getFigmaDir(): string {
+  return FIGMA_DIR;
+}
+
 export function getRepoRoot(): string {
   return REPO_ROOT;
 }
@@ -107,6 +115,12 @@ export function ensureConfigDir(): void {
 export function ensureIssuesDir(): void {
   if (!existsSync(ISSUES_DIR)) {
     mkdirSync(ISSUES_DIR, { recursive: true });
+  }
+}
+
+export function ensureFigmaDir(): void {
+  if (!existsSync(FIGMA_DIR)) {
+    mkdirSync(FIGMA_DIR, { recursive: true });
   }
 }
 

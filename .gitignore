@@ -9,3 +9,5 @@ oapi/*
 !oapi/.gitkeep
 issues/*
 !issues/.gitkeep
+figma/*
+!figma/.gitkeep

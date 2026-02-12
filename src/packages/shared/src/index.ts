@@ -1,6 +1,7 @@
 // Auth
 export { getGitlabClient } from "./auth/gitlab.js";
 export { getJiraClient } from "./auth/jira.js";
+export { getFigmaToken } from "./auth/figma.js";
 
 // Config
 export {
@@ -10,9 +11,11 @@ export {
   getConfigDir,
   getOapiDir,
   getIssuesDir,
+  getFigmaDir,
   getRepoRoot,
   ensureConfigDir,
   ensureIssuesDir,
+  ensureFigmaDir,
 } from "./config/global.js";
 export type {
   GlobalConfig,

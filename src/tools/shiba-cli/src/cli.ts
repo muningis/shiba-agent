@@ -40,6 +40,7 @@ import {
   issueSetAnalysis,
   issueAddRequirement,
 } from "./commands/issue.js";
+import { createFigmaCommands } from "./commands/figma.js";
 
 const program = new Command()
   .name("shiba")
@@ -608,5 +609,8 @@ issue
       handleCliError(err);
     }
   });
+
+// Figma commands
+program.addCommand(createFigmaCommands());
 
 program.parse();

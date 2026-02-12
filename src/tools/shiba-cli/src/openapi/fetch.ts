@@ -1,8 +1,19 @@
 import type { OpenAPISpecConfig } from "@shiba-agent/shared";
-import yaml from "yaml";
+import { dereference, validate } from "@scalar/openapi-parser";
 import type { OpenAPISpec } from "./types.js";
 
+export interface FetchResult {
+  spec: OpenAPISpec;
+  valid: boolean;
+  errors?: string[];
+}
+
 export async function fetchSpec(config: OpenAPISpecConfig): Promise<OpenAPISpec> {
+  const result = await fetchAndValidateSpec(config);
+  return result.spec;
+}
+
+export async function fetchAndValidateSpec(config: OpenAPISpecConfig): Promise<FetchResult> {
   const headers: Record<string, string> = {
     Accept: "application/json, application/yaml, text/yaml, */*",
   };
@@ -40,17 +51,19 @@ export async function fetchSpec(config: OpenAPISpecConfig): Promise<OpenAPISpec>
   }
 
   const text = await response.text();
-  const contentType = response.headers.get("content-type") ?? "";
 
-  // Determine if YAML or JSON based on content-type or URL
-  const isYaml =
-    contentType.includes("yaml") ||
-    config.url.endsWith(".yaml") ||
-    config.url.endsWith(".yml");
+  // Use @scalar/openapi-parser for validation and dereferencing
+  // It handles both JSON and YAML automatically
+  const validation = await validate(text);
 
-  if (isYaml) {
-    return yaml.parse(text) as OpenAPISpec;
-  }
+  const errors = validation.errors?.map((e) => e.message) ?? [];
 
-  return JSON.parse(text) as OpenAPISpec;
+  // Dereference to resolve all $ref pointers
+  const { schema } = await dereference(text);
+
+  return {
+    spec: schema as unknown as OpenAPISpec,
+    valid: validation.valid,
+    errors: errors.length > 0 ? errors : undefined,
+  };
 }
