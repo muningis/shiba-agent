@@ -5,19 +5,44 @@ import type {
   JiraTransitionResult,
   JiraComment,
 } from "@shiba-agent/shared";
+import {
+  loadIssue,
+  saveIssue,
+  createDefaultIssue,
+  syncJiraData,
+  type JiraData,
+  type JiraComment as IssueJiraComment,
+  type JiraLinkedIssue,
+} from "../issues/index.js";
 
 // Issue Get
 export interface IssueGetOpts {
   key: string;
+  noTrack?: boolean;
 }
 
 export async function issueGet(opts: IssueGetOpts): Promise<void> {
   const jira = getJiraClient();
+  const shouldTrack = !opts.noTrack;
 
   const issue = await jira.issues.getIssue({
     issueIdOrKey: opts.key,
-    fields: ["summary", "status", "assignee", "reporter", "priority", "issuetype", "created", "updated", "description"],
+    fields: [
+      "summary",
+      "status",
+      "assignee",
+      "reporter",
+      "priority",
+      "issuetype",
+      "created",
+      "updated",
+      "description",
+      "comment",
+      "issuelinks",
+    ],
   });
+
+  const fields = issue.fields as Record<string, unknown>;
 
   const summary: JiraIssueSummary = {
     key: issue.key,
@@ -34,7 +59,86 @@ export async function issueGet(opts: IssueGetOpts): Promise<void> {
     updated: issue.fields.updated ?? "",
   };
 
+  // Track issue in local file
+  if (shouldTrack) {
+    const tracked = loadIssue(opts.key) ?? createDefaultIssue(opts.key);
+
+    // Parse Jira data for tracking
+    const jiraData: JiraData = {
+      id: issue.id,
+      summary: issue.fields.summary,
+      status: issue.fields.status?.name ?? "Unknown",
+      issueType: issue.fields.issuetype?.name ?? "Unknown",
+      priority: issue.fields.priority?.name ?? "None",
+      assignee: issue.fields.assignee
+        ? { name: issue.fields.assignee.displayName ?? "Unknown", email: issue.fields.assignee.emailAddress ?? "" }
+        : null,
+      reporter: issue.fields.reporter ? { name: issue.fields.reporter.displayName ?? "Unknown" } : null,
+      created: issue.fields.created ?? "",
+      updated: issue.fields.updated ?? "",
+      description: parseDescription(fields.description),
+      comments: parseComments(fields.comment),
+      linkedIssues: parseLinkedIssues(fields.issuelinks),
+    };
+
+    syncJiraData(tracked, jiraData);
+    saveIssue(tracked);
+  }
+
   successResponse(summary);
+}
+
+// Helper to parse ADF description to plain text
+function parseDescription(description: unknown): string | null {
+  if (!description) return null;
+  if (typeof description === "string") return description;
+
+  // Handle Atlassian Document Format (ADF)
+  const adf = description as { content?: Array<{ content?: Array<{ text?: string }> }> };
+  if (adf.content) {
+    return adf.content
+      .map((block) => block.content?.map((inline) => inline.text ?? "").join("") ?? "")
+      .join("\n");
+  }
+  return null;
+}
+
+// Helper to parse comments
+function parseComments(comment: unknown): IssueJiraComment[] {
+  if (!comment) return [];
+  const commentData = comment as { comments?: Array<{ author?: { displayName?: string }; body?: unknown; created?: string }> };
+  if (!commentData.comments) return [];
+
+  return commentData.comments.map((c) => ({
+    author: c.author?.displayName ?? "Unknown",
+    body: parseDescription(c.body) ?? "",
+    created: c.created ?? "",
+  }));
+}
+
+// Helper to parse linked issues
+function parseLinkedIssues(issuelinks: unknown): JiraLinkedIssue[] {
+  if (!issuelinks || !Array.isArray(issuelinks)) return [];
+
+  return issuelinks
+    .map((link) => {
+      const linkData = link as {
+        type?: { name?: string };
+        inwardIssue?: { key?: string; fields?: { summary?: string; status?: { name?: string } } };
+        outwardIssue?: { key?: string; fields?: { summary?: string; status?: { name?: string } } };
+      };
+
+      const linkedIssue = linkData.inwardIssue ?? linkData.outwardIssue;
+      if (!linkedIssue) return null;
+
+      return {
+        type: linkData.type?.name ?? "Related",
+        key: linkedIssue.key ?? "",
+        summary: linkedIssue.fields?.summary ?? "",
+        status: linkedIssue.fields?.status?.name ?? "Unknown",
+      };
+    })
+    .filter((link): link is JiraLinkedIssue => link !== null);
 }
 
 // Issue Create

@@ -45,6 +45,24 @@ for agent in "$SCRIPT_DIR/src/agents"/*.md; do
     echo "  Linked: $name"
 done
 
+# Create skills directory if it doesn't exist
+SKILLS_DIR="$HOME/.claude/skills"
+mkdir -p "$SKILLS_DIR"
+
+# Symlink skill definitions
+echo "Symlinking skill definitions..."
+for skill_dir in "$SCRIPT_DIR/src/skills"/*; do
+    if [ -d "$skill_dir" ]; then
+        name=$(basename "$skill_dir")
+        target="$SKILLS_DIR/$name"
+        if [ -L "$target" ] || [ -d "$target" ]; then
+            rm -rf "$target"
+        fi
+        ln -s "$skill_dir" "$target"
+        echo "  Linked: $name"
+    fi
+done
+
 # Create config file if it doesn't exist
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Creating config file template..."

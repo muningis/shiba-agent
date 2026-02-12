@@ -53,22 +53,25 @@ export async function init(opts: InitOpts): Promise<void> {
 
 function updateGitignore(): void {
   const gitignorePath = ".gitignore";
-  const tasksPattern = ".shiba/tasks/";
+  const patterns = [".shiba/tasks/"];
 
   let content = "";
   if (existsSync(gitignorePath)) {
     content = readFileSync(gitignorePath, "utf-8");
   }
 
-  // Check if already present
-  if (content.includes(tasksPattern)) {
+  // Filter to patterns not already in gitignore
+  const toAdd = patterns.filter((p) => !content.includes(p));
+
+  if (toAdd.length === 0) {
     return;
   }
 
   // Append to gitignore
-  const newContent = content.endsWith("\n") || content === ""
-    ? content + tasksPattern + "\n"
-    : content + "\n" + tasksPattern + "\n";
+  const newContent =
+    content.endsWith("\n") || content === ""
+      ? content + toAdd.join("\n") + "\n"
+      : content + "\n" + toAdd.join("\n") + "\n";
 
   writeFileSync(gitignorePath, newContent);
 }

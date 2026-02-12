@@ -76,6 +76,7 @@ const REPO_ROOT = findRepoRoot();
 const CONFIG_DIR = join(REPO_ROOT, "config");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 const OAPI_DIR = join(REPO_ROOT, "oapi");
+const ISSUES_DIR = join(REPO_ROOT, "issues");
 
 export function getConfigDir(): string {
   return CONFIG_DIR;
@@ -89,6 +90,10 @@ export function getOapiDir(): string {
   return OAPI_DIR;
 }
 
+export function getIssuesDir(): string {
+  return ISSUES_DIR;
+}
+
 export function getRepoRoot(): string {
   return REPO_ROOT;
 }
@@ -96,6 +101,12 @@ export function getRepoRoot(): string {
 export function ensureConfigDir(): void {
   if (!existsSync(CONFIG_DIR)) {
     mkdirSync(CONFIG_DIR, { recursive: true });
+  }
+}
+
+export function ensureIssuesDir(): void {
+  if (!existsSync(ISSUES_DIR)) {
+    mkdirSync(ISSUES_DIR, { recursive: true });
   }
 }
 

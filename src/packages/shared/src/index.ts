@@ -9,8 +9,10 @@ export {
   getConfigPath,
   getConfigDir,
   getOapiDir,
+  getIssuesDir,
   getRepoRoot,
   ensureConfigDir,
+  ensureIssuesDir,
 } from "./config/global.js";
 export type {
   GlobalConfig,

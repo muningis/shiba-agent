@@ -7,3 +7,5 @@ config/*
 !config/.gitkeep
 oapi/*
 !oapi/.gitkeep
+issues/*
+!issues/.gitkeep

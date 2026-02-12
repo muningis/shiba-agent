@@ -28,6 +28,18 @@ import {
   issueSearch,
   issueAssign,
 } from "./commands/jira.js";
+import {
+  issueList,
+  issueShow,
+  issueAddNote,
+  issueAddMr,
+  issueAddApi,
+  issueAddContext,
+  issueAddFigma,
+  issueUpdateProgress,
+  issueSetAnalysis,
+  issueAddRequirement,
+} from "./commands/issue.js";
 
 const program = new Command()
   .name("shiba")
@@ -300,9 +312,10 @@ jira
   .command("issue-get")
   .description("Get details of a Jira issue")
   .requiredOption("--key <key>", "Issue key (e.g. PROJ-123)")
+  .option("--no-track", "Skip creating/updating local issue tracking file")
   .action(async (opts) => {
     try {
-      await issueGet({ key: opts.key });
+      await issueGet({ key: opts.key, noTrack: !opts.track });
     } catch (err) {
       handleCliError(err);
     }
@@ -394,6 +407,202 @@ jira
       await issueAssign({
         key: opts.key,
         assignee: opts.assignee,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+// Issue tracking commands (local issue management)
+const issue = program
+  .command("issue")
+  .description("Local issue tracking management");
+
+issue
+  .command("list")
+  .description("List all tracked issues")
+  .action(async () => {
+    try {
+      await issueList();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+issue
+  .command("show")
+  .description("Show full tracked issue data")
+  .requiredOption("--key <key>", "Issue key (e.g. PROJ-123)")
+  .action(async (opts) => {
+    try {
+      await issueShow({ key: opts.key });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+issue
+  .command("add-note")
+  .description("Add a note to a tracked issue")
+  .requiredOption("--key <key>", "Issue key")
+  .requiredOption("--content <text>", "Note content")
+  .option("--category <cat>", "Note category: decision, todo, warning, info, question", "info")
+  .action(async (opts) => {
+    try {
+      await issueAddNote({
+        key: opts.key,
+        content: opts.content,
+        category: opts.category,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+issue
+  .command("add-mr")
+  .description("Link a merge request to a tracked issue")
+  .requiredOption("--key <key>", "Issue key")
+  .requiredOption("--project <path>", "GitLab project path")
+  .requiredOption("--iid <iid>", "Merge request IID")
+  .option("--primary", "Mark as primary MR for this issue", false)
+  .action(async (opts) => {
+    try {
+      await issueAddMr({
+        key: opts.key,
+        project: opts.project,
+        iid: parseInt(opts.iid, 10),
+        primary: opts.primary,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+issue
+  .command("add-api")
+  .description("Add an API endpoint reference")
+  .requiredOption("--key <key>", "Issue key")
+  .requiredOption("--method <method>", "HTTP method: GET, POST, PUT, PATCH, DELETE")
+  .requiredOption("--path <path>", "API path (e.g. /api/users/{id})")
+  .requiredOption("--description <text>", "What this endpoint does")
+  .option("--spec <name>", "OpenAPI spec name")
+  .action(async (opts) => {
+    try {
+      await issueAddApi({
+        key: opts.key,
+        method: opts.method.toUpperCase(),
+        path: opts.path,
+        description: opts.description,
+        spec: opts.spec,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+issue
+  .command("add-context")
+  .description("Add a required context/file reference")
+  .requiredOption("--key <key>", "Issue key")
+  .requiredOption("--type <type>", "Context type: file, module, documentation, external, dependency")
+  .requiredOption("--path <path>", "File path or URL")
+  .requiredOption("--description <text>", "What this context is")
+  .requiredOption("--relevance <text>", "Why this context is needed")
+  .action(async (opts) => {
+    try {
+      await issueAddContext({
+        key: opts.key,
+        type: opts.type,
+        path: opts.path,
+        description: opts.description,
+        relevance: opts.relevance,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+issue
+  .command("add-figma")
+  .description("Add a Figma design reference")
+  .requiredOption("--key <key>", "Issue key")
+  .requiredOption("--url <url>", "Figma URL")
+  .requiredOption("--name <name>", "Design name")
+  .option("--description <text>", "Description of this design")
+  .action(async (opts) => {
+    try {
+      await issueAddFigma({
+        key: opts.key,
+        url: opts.url,
+        name: opts.name,
+        description: opts.description,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+issue
+  .command("progress")
+  .description("Update issue progress")
+  .requiredOption("--key <key>", "Issue key")
+  .option("--status <status>", "Status: not_started, in_progress, blocked, in_review, completed")
+  .option("--percent <n>", "Percent complete (0-100)")
+  .option("--blocker <text>", "Add a blocker")
+  .option("--clear-blockers", "Clear all blockers", false)
+  .action(async (opts) => {
+    try {
+      await issueUpdateProgress({
+        key: opts.key,
+        status: opts.status,
+        percent: opts.percent ? parseInt(opts.percent, 10) : undefined,
+        blocker: opts.blocker,
+        clearBlockers: opts.clearBlockers,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+issue
+  .command("set-analysis")
+  .description("Set or update issue analysis")
+  .requiredOption("--key <key>", "Issue key")
+  .requiredOption("--summary <text>", "Analysis summary")
+  .option("--acceptance-criteria <items>", "Comma-separated acceptance criteria")
+  .option("--out-of-scope <items>", "Comma-separated out of scope items")
+  .option("--assumptions <items>", "Comma-separated assumptions")
+  .action(async (opts) => {
+    try {
+      await issueSetAnalysis({
+        key: opts.key,
+        summary: opts.summary,
+        acceptanceCriteria: opts.acceptanceCriteria,
+        outOfScope: opts.outOfScope,
+        assumptions: opts.assumptions,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+issue
+  .command("add-requirement")
+  .description("Add a requirement to issue analysis")
+  .requiredOption("--key <key>", "Issue key")
+  .requiredOption("--title <text>", "Requirement title")
+  .requiredOption("--description <text>", "Requirement description")
+  .option("--type <type>", "Type: functional, non-functional, technical, ui, data", "functional")
+  .option("--priority <pri>", "Priority: must, should, could, wont", "should")
+  .action(async (opts) => {
+    try {
+      await issueAddRequirement({
+        key: opts.key,
+        title: opts.title,
+        description: opts.description,
+        type: opts.type,
+        priority: opts.priority,
       });
     } catch (err) {
       handleCliError(err);

@@ -110,12 +110,31 @@ All output is JSON to stdout.
 
 | Command | Purpose | Key Flags |
 |---------|---------|-----------|
-| `shiba jira issue-get` | Get issue details | `--key` |
+| `shiba jira issue-get` | Get issue details | `--key`, `--no-track` |
 | `shiba jira issue-create` | Create issue | `--project`, `--type`, `--summary` |
 | `shiba jira issue-transition` | Change status | `--key`, `--transition` |
 | `shiba jira issue-comment` | Add comment | `--key`, `--body` |
 | `shiba jira issue-search` | JQL search | `--jql`, `--max-results` |
 | `shiba jira issue-assign` | Assign issue | `--key`, `--assignee` |
+
+### Issue Tracking Commands (`shiba issue`)
+
+Local issue tracking for agent workflow. Issue files are stored in `.shiba/issues/<KEY>.json`.
+
+| Command | Purpose | Key Flags |
+|---------|---------|-----------|
+| `shiba issue list` | List tracked issues | — |
+| `shiba issue show` | Show full issue data | `--key` |
+| `shiba issue add-note` | Add agent note | `--key`, `--content`, `--category` |
+| `shiba issue add-mr` | Link merge request | `--key`, `--project`, `--iid`, `--primary` |
+| `shiba issue add-api` | Add API endpoint | `--key`, `--method`, `--path`, `--description` |
+| `shiba issue add-context` | Add context reference | `--key`, `--type`, `--path`, `--description`, `--relevance` |
+| `shiba issue add-figma` | Add Figma reference | `--key`, `--url`, `--name` |
+| `shiba issue progress` | Update progress | `--key`, `--status`, `--percent`, `--blocker` |
+| `shiba issue set-analysis` | Set analysis data | `--key`, `--summary`, `--acceptance-criteria` |
+| `shiba issue add-requirement` | Add requirement | `--key`, `--title`, `--description`, `--type`, `--priority` |
+
+**Note:** `shiba jira issue-get` automatically creates/updates the local issue tracking file. Use `--no-track` to disable this behavior.
 
 Run `shiba <command> --help` for full option details.
 
