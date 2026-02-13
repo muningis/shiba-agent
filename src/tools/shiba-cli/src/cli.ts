@@ -80,6 +80,7 @@ import {
 } from "./commands/env.js";
 import { setup } from "./commands/setup.js";
 import { ask } from "./commands/ask.js";
+import { update } from "./commands/update.js";
 
 const program = new Command()
   .name("shiba")
@@ -129,6 +130,17 @@ program
   .action(async (query) => {
     try {
       await ask({ query });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+program
+  .command("update")
+  .description("Pull latest changes and rebuild shiba")
+  .action(async () => {
+    try {
+      await update();
     } catch (err) {
       handleCliError(err);
     }
