@@ -20,7 +20,7 @@ export function TrackedIssueList({ issues, onSelect }: TrackedIssueListProps) {
   if (issues.length === 0) {
     return (
       <Box padding={1}>
-        <Text dimColor>No tracked issues. Issues are tracked when viewed via `shiba jira issue-get`.</Text>
+        <Text dimColor>No tracked issues yet. View an issue with `shiba {"<tracker>"} issue-get` to start tracking it.</Text>
       </Box>
     );
   }
