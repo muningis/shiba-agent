@@ -109,6 +109,21 @@ shiba oapi schema User
 shiba oapi search "authentication"
 ```
 
+**Authentication:** For protected OpenAPI specs, use `--auth-token` with `--auth-type`:
+
+```bash
+# Bearer token (default)
+shiba oapi add --name api --url https://api.example.com/openapi.json --auth-token "YOUR_TOKEN"
+
+# API key with custom header
+shiba oapi add --name api --url https://api.example.com/openapi.json \
+  --auth-type apikey --auth-token "YOUR_KEY" --auth-header "X-API-Key"
+
+# Basic auth (token = base64 of username:password)
+shiba oapi add --name api --url https://api.example.com/openapi.json \
+  --auth-type basic --auth-token "dXNlcjpwYXNz"
+```
+
 ### GitLab (wraps glab)
 
 ```bash

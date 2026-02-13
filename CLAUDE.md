@@ -206,12 +206,27 @@ All output is JSON to stdout.
 | Command | Purpose | Key Flags |
 |---------|---------|-----------|
 | `shiba oapi list` | List configured specs | — |
-| `shiba oapi add` | Add spec source | `--name`, `--url`, `--auth-token` |
+| `shiba oapi add` | Add spec source | `--name`, `--url`, `--auth-token`, `--auth-type`, `--auth-header` |
 | `shiba oapi fetch` | Fetch/update specs | `--name` or `--all` |
 | `shiba oapi path <pattern>` | Find endpoints by path | `--spec` |
 | `shiba oapi schema [name]` | Query schemas | `--list`, `--spec` |
 | `shiba oapi search <query>` | Search paths & schemas | `--type`, `--spec` |
 | `shiba oapi remove` | Remove a spec | `--name` |
+
+**Authentication for protected specs:**
+
+```bash
+# Bearer token (default)
+shiba oapi add --name api --url https://api.example.com/openapi.json --auth-token "TOKEN"
+
+# API key with custom header
+shiba oapi add --name api --url https://api.example.com/openapi.json \
+  --auth-type apikey --auth-token "KEY" --auth-header "X-API-Key"
+
+# Basic auth (token = base64 of username:password)
+shiba oapi add --name api --url https://api.example.com/openapi.json \
+  --auth-type basic --auth-token "dXNlcjpwYXNz"
+```
 
 ### GitLab Commands (`shiba gitlab`)
 
