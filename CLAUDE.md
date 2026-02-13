@@ -350,11 +350,14 @@ Error (written to stderr):
 
 ## Agents
 
-Three agents are defined in `src/agents/`:
+Agents are defined in `src/agents/`:
 
 - **gitlab-agent** — GitLab specialist (MRs, pipelines, code review)
+- **github-agent** — GitHub specialist (PRs, issues, workflows)
 - **jira-agent** — Jira specialist (issues, transitions, JQL)
-- **project-manager** — Orchestrator that delegates to the above two
+- **oapi-agent** — OpenAPI specialist (endpoint discovery, schema analysis, API guidance)
+- **project-manager** — Orchestrator that delegates to specialist agents
+- **task-agent** — Task execution and planning
 
 ## Docker Sandbox for Claude Code
 
