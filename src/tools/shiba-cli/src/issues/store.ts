@@ -60,7 +60,7 @@ export function listIssues(): string[] {
 }
 
 export function createDefaultIssue(key: string): TrackedIssue {
-  const [projectKey] = key.split("-");
+  const projectKey = key.match(/^(.+)-\d+$/)?.[1] ?? key.split("-")[0];
   const now = new Date().toISOString();
 
   return {
@@ -104,7 +104,7 @@ export function createDefaultIssue(key: string): TrackedIssue {
 // ===== Jira Data Sync =====
 
 export function syncJiraData(issue: TrackedIssue, jiraData: JiraData): void {
-  issue.jira = jiraData;
+  issue.jira = { ...issue.jira, ...jiraData };
   issue.jiraSyncedAt = new Date().toISOString();
 }
 
@@ -143,6 +143,11 @@ export interface AddMergeRequestInput {
 }
 
 export function addMergeRequest(issue: TrackedIssue, mr: AddMergeRequestInput): LinkedMergeRequest {
+  const existing = issue.mergeRequests.find(
+    (m) => m.iid === mr.iid && m.projectPath === mr.projectPath
+  );
+  if (existing) return existing;
+
   const linked: LinkedMergeRequest = {
     id: randomUUID(),
     iid: mr.iid,
@@ -183,6 +188,11 @@ export interface AddApiEndpointInput {
 }
 
 export function addApiEndpoint(issue: TrackedIssue, api: AddApiEndpointInput): ApiEndpoint {
+  const existing = issue.apis.find(
+    (a) => a.method === api.method && a.path === api.path
+  );
+  if (existing) return existing;
+
   const endpoint: ApiEndpoint = {
     id: randomUUID(),
     method: api.method,
@@ -215,6 +225,11 @@ export interface AddContextInput {
 }
 
 export function addContext(issue: TrackedIssue, ctx: AddContextInput): RequiredContext {
+  const existing = issue.contexts.find(
+    (c) => c.type === ctx.type && c.path === ctx.path
+  );
+  if (existing) return existing;
+
   const context: RequiredContext = {
     id: randomUUID(),
     type: ctx.type,
@@ -244,6 +259,9 @@ export interface AddFigmaInput {
 }
 
 export function addFigma(issue: TrackedIssue, figma: AddFigmaInput): FigmaReference {
+  const existing = issue.figma.find((f) => f.url === figma.url);
+  if (existing) return existing;
+
   const ref: FigmaReference = {
     id: randomUUID(),
     url: figma.url,
@@ -266,7 +284,10 @@ export function markFigmaImplemented(issue: TrackedIssue, figmaId: string): bool
 
 // ===== Progress Helpers =====
 
-export function updateProgress(issue: TrackedIssue, updates: Partial<IssueProgress>): void {
+export function updateProgress(
+  issue: TrackedIssue,
+  updates: Pick<Partial<IssueProgress>, "status" | "percentComplete" | "blockers">
+): void {
   const now = new Date().toISOString();
 
   if (updates.status === "in_progress" && issue.progress.status === "not_started") {
@@ -280,20 +301,32 @@ export function updateProgress(issue: TrackedIssue, updates: Partial<IssueProgre
     issue.progress.lastWorkedAt = now;
   }
 
-  Object.assign(issue.progress, updates);
+  if (updates.status !== undefined) issue.progress.status = updates.status;
+  if (updates.percentComplete !== undefined) issue.progress.percentComplete = updates.percentComplete;
+  if (updates.blockers !== undefined) issue.progress.blockers = updates.blockers;
 }
 
+/**
+ * Adds a blocker string and sets status to "blocked".
+ * The previous status is stored so it can be restored when blockers are cleared.
+ */
 export function addBlocker(issue: TrackedIssue, blocker: string): void {
   issue.progress.blockers.push(blocker);
   if (issue.progress.status !== "blocked") {
+    issue.progress.statusBeforeBlocked = issue.progress.status;
     issue.progress.status = "blocked";
   }
 }
 
+/**
+ * Clears all blockers and restores the status that was active before blocking.
+ * Falls back to "in_progress" if no previous status was stored.
+ */
 export function clearBlockers(issue: TrackedIssue): void {
   issue.progress.blockers = [];
   if (issue.progress.status === "blocked") {
-    issue.progress.status = "in_progress";
+    issue.progress.status = issue.progress.statusBeforeBlocked ?? "in_progress";
+    issue.progress.statusBeforeBlocked = null;
   }
 }
 
