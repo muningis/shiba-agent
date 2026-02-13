@@ -3,7 +3,7 @@ import { join } from "path";
 import { getRepoRoot } from "./config/global.js";
 
 // Load .env file from repo root
-config({ path: join(getRepoRoot(), ".env") });
+config({ path: join(getRepoRoot(), ".env"), quiet: true });
 
 /**
  * Get environment variable with optional fallback
