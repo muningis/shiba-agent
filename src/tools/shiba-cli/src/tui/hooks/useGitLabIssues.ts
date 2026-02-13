@@ -20,6 +20,10 @@ export function useGitLabIssues({ enabled = true }: { enabled?: boolean } = {}):
     setLoading(true);
     setError(null);
 
+    // Yield to the event loop so React can render the loading state
+    // before the synchronous execCli blocks.
+    await new Promise((r) => setTimeout(r, 0));
+
     try {
       const result = execCli("glab", [
         "issue", "list",

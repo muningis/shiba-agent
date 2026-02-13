@@ -1,13 +1,15 @@
 import React from "react";
 import { Box, Text } from "ink";
+import Spinner from "ink-spinner";
 import type { View, Section } from "../types.js";
 
 interface StatusBarProps {
   view: View;
   section: Section;
+  refreshing?: boolean;
 }
 
-export function StatusBar({ view, section }: StatusBarProps) {
+export function StatusBar({ view, section, refreshing }: StatusBarProps) {
   const hints: string[] = ["Tab Switch"];
 
   if (section === "issues") {
@@ -38,6 +40,14 @@ export function StatusBar({ view, section }: StatusBarProps) {
       <Text dimColor>
         {hints.join(" · ")}
       </Text>
+      {refreshing && (
+        <Box marginLeft={1}>
+          <Text color="yellow">
+            <Spinner type="dots" />
+            {" "}Refreshing…
+          </Text>
+        </Box>
+      )}
     </Box>
   );
 }

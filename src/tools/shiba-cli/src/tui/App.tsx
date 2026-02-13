@@ -12,6 +12,8 @@ import { ConfigSection } from "./components/ConfigSection.js";
 import { SessionSection } from "./components/SessionSection.js";
 import { useIssues } from "./hooks/useIssues.js";
 import { useFullIssue } from "./hooks/useFullIssue.js";
+import { useFullGitHubIssue } from "./hooks/useFullGitHubIssue.js";
+import { useFullGitLabIssue } from "./hooks/useFullGitLabIssue.js";
 import { useSessionLauncher } from "./hooks/useSessionLauncher.js";
 import type { IssueBasic, View, Section } from "./types.js";
 import { nextSection, prevSection } from "./types.js";
@@ -38,6 +40,32 @@ export function App() {
     error: errorFull,
     refresh: refreshFull,
   } = useFullIssue(fullIssueKey);
+
+  // Only fetch full GitHub detail when viewing a GitHub issue
+  const fullGitHubKey =
+    section === "issues" && view === "detail" && selectedIssue?.source === "github"
+      ? selectedIssue.key
+      : null;
+
+  const {
+    issue: fullGitHubIssue,
+    loading: loadingGitHub,
+    error: errorGitHub,
+    refresh: refreshGitHub,
+  } = useFullGitHubIssue(fullGitHubKey);
+
+  // Only fetch full GitLab detail when viewing a GitLab issue
+  const fullGitLabKey =
+    section === "issues" && view === "detail" && selectedIssue?.source === "gitlab"
+      ? selectedIssue.key
+      : null;
+
+  const {
+    issue: fullGitLabIssue,
+    loading: loadingGitLab,
+    error: errorGitLab,
+    refresh: refreshGitLab,
+  } = useFullGitLabIssue(fullGitLabKey);
 
   // Clear launch feedback after 3 seconds
   useEffect(() => {
@@ -82,8 +110,10 @@ export function App() {
       if (input === "r") {
         if (view === "list") {
           refresh();
-        } else if (view === "detail" && selectedIssue?.source === "jira") {
-          refreshFull();
+        } else if (view === "detail") {
+          if (selectedIssue?.source === "jira") refreshFull();
+          else if (selectedIssue?.source === "github") refreshGitHub();
+          else if (selectedIssue?.source === "gitlab") refreshGitLab();
         }
       }
       if (input === "s" && view === "detail" && selectedIssue) {
@@ -143,6 +173,57 @@ export function App() {
                       <IssueDetail issue={fullIssue} />
                     )}
                   </>
+                ) : selectedIssue.source === "github" ? (
+                  <>
+                    {loadingGitHub && (
+                      <Box padding={1}>
+                        <Text color="yellow">
+                          <Spinner type="dots" />
+                          {" "}Loading issue details...
+                        </Text>
+                      </Box>
+                    )}
+                    {errorGitHub && (
+                      <Box padding={1}>
+                        <Text color="red">Error: {errorGitHub}</Text>
+                      </Box>
+                    )}
+                    {!loadingGitHub && !errorGitHub && fullGitHubIssue && (
+                      <IssueBasicDetail
+                        issue={fullGitHubIssue}
+                        description={fullGitHubIssue.description}
+                        labels={fullGitHubIssue.labels}
+                        assignees={fullGitHubIssue.assignees}
+                        author={fullGitHubIssue.author}
+                        comments={fullGitHubIssue.comments}
+                      />
+                    )}
+                  </>
+                ) : selectedIssue.source === "gitlab" ? (
+                  <>
+                    {loadingGitLab && (
+                      <Box padding={1}>
+                        <Text color="yellow">
+                          <Spinner type="dots" />
+                          {" "}Loading issue details...
+                        </Text>
+                      </Box>
+                    )}
+                    {errorGitLab && (
+                      <Box padding={1}>
+                        <Text color="red">Error: {errorGitLab}</Text>
+                      </Box>
+                    )}
+                    {!loadingGitLab && !errorGitLab && fullGitLabIssue && (
+                      <IssueBasicDetail
+                        issue={fullGitLabIssue}
+                        description={fullGitLabIssue.description}
+                        labels={fullGitLabIssue.labels}
+                        assignees={fullGitLabIssue.assignees}
+                        author={fullGitLabIssue.author}
+                      />
+                    )}
+                  </>
                 ) : (
                   <IssueBasicDetail issue={selectedIssue} />
                 )}
@@ -181,7 +262,11 @@ export function App() {
         )}
       </Box>
 
-      <StatusBar view={view} section={section} />
+      <StatusBar
+        view={view}
+        section={section}
+        refreshing={section === "issues" && groups.some((g) => g.loading)}
+      />
     </Box>
   );
 }
