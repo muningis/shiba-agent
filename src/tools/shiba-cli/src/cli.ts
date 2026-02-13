@@ -126,6 +126,7 @@ import { update } from "./commands/update.js";
 import {
   worktreeCreate,
   worktreeList,
+  worktreePrune,
   worktreeRemove,
 } from "./commands/worktree.js";
 
@@ -1384,6 +1385,22 @@ worktree
       await worktreeRemove({
         path: opts.path,
         force: opts.force,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+worktree
+  .command("prune")
+  .description("Remove stale worktree references from git")
+  .option("--dry-run", "Show what would be pruned without removing", false)
+  .option("--verbose", "Show detailed output", false)
+  .action(async (opts) => {
+    try {
+      await worktreePrune({
+        dryRun: opts.dryRun,
+        verbose: opts.verbose,
       });
     } catch (err) {
       handleCliError(err);

@@ -144,6 +144,35 @@ export async function worktreeList(): Promise<void> {
   successResponse({ worktrees });
 }
 
+export interface WorktreePruneOpts {
+  dryRun?: boolean;
+  verbose?: boolean;
+}
+
+export async function worktreePrune(opts: WorktreePruneOpts): Promise<void> {
+  const args = ["worktree", "prune"];
+  if (opts.dryRun) args.push("--dry-run");
+  if (opts.verbose) args.push("--verbose");
+
+  const result = spawnSync("git", args, {
+    encoding: "utf-8",
+    stdio: "pipe",
+  });
+
+  if (result.status !== 0) {
+    errorResponse("PRUNE_FAILED", result.stderr || "Failed to prune worktrees");
+  }
+
+  const output = result.stderr.trim();
+  const lines = output ? output.split("\n").filter(Boolean) : [];
+
+  successResponse({
+    pruned: lines.length,
+    details: lines,
+    dryRun: opts.dryRun ?? false,
+  });
+}
+
 export interface WorktreeRemoveOpts {
   path: string;
   force?: boolean;
