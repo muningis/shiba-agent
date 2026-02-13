@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import type { IssueBasic, IssueTracker, TrackerGroup } from "../types.js";
@@ -76,6 +76,14 @@ export function IssueList({ groups, onSelect, onAction }: IssueListProps) {
     }
   });
 
+  useEffect(() => {
+    if (selectableIndices.length === 0) return;
+    const max = selectableIndices.length - 1;
+    if (cursor > max) {
+      setCursor(max);
+    }
+  }, [selectableIndices.length, cursor]);
+
   if (groups.length === 0) {
     return (
       <Box padding={1}>
@@ -84,11 +92,7 @@ export function IssueList({ groups, onSelect, onAction }: IssueListProps) {
     );
   }
 
-  // Clamp cursor in case groups changed
   const clampedCursor = Math.min(cursor, Math.max(0, selectableIndices.length - 1));
-  if (clampedCursor !== cursor) {
-    setCursor(clampedCursor);
-  }
 
   return (
     <Box flexDirection="column" padding={1}>
