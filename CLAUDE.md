@@ -235,7 +235,10 @@ shiba oapi add --name api --url https://api.example.com/openapi.json \
 | `shiba gitlab mr-create` | Create merge request | `--project`, `--source`, `--target`, `--title` |
 | `shiba gitlab mr-list` | List merge requests | `--project`, `--state`, `--limit` |
 | `shiba gitlab mr-merge` | Merge an MR | `--project`, `--iid`, `--squash` |
-| `shiba gitlab mr-comment` | Comment on MR | `--project`, `--iid`, `--body` |
+| `shiba gitlab mr-comment` | Comment on MR (standalone note) | `--project`, `--iid`, `--body` |
+| `shiba gitlab mr-discussion-list` | List discussion threads | `--iid`, `--project` |
+| `shiba gitlab mr-discussion-create` | Start new discussion thread | `--iid`, `--body`, `--project` |
+| `shiba gitlab mr-discussion-reply` | Reply in existing thread | `--discussion-id`, `--body`, `--project` |
 | `shiba gitlab pipeline-status` | Get pipeline + jobs | `--project`, `--pipeline-id` |
 | `shiba gitlab pipeline-list` | List pipelines | `--project`, `--ref`, `--limit` |
 | `shiba gitlab issue-get` | Get issue details | `--iid`, `--project` |

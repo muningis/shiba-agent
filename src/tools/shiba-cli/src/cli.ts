@@ -17,6 +17,9 @@ import {
   mrList,
   mrMerge,
   mrComment,
+  mrDiscussionList,
+  mrDiscussionCreate,
+  mrDiscussionReply,
   pipelineStatus,
   pipelineList,
   glIssueGet,
@@ -332,7 +335,7 @@ gitlab
 
 gitlab
   .command("mr-comment")
-  .description("Add a comment to a merge request")
+  .description("Add a comment to a merge request (standalone note)")
   .requiredOption("--project <id>", "Project ID or path")
   .requiredOption("--iid <iid>", "Merge request internal ID")
   .requiredOption("--body <text>", "Comment body text")
@@ -342,6 +345,58 @@ gitlab
         project: opts.project,
         iid: opts.iid,
         body: opts.body,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+gitlab
+  .command("mr-discussion-list")
+  .description("List discussions (threaded comments) on a merge request")
+  .requiredOption("--iid <iid>", "Merge request internal ID")
+  .option("--project <id>", "Project ID or path")
+  .action(async (opts) => {
+    try {
+      await mrDiscussionList({
+        iid: opts.iid,
+        project: opts.project,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+gitlab
+  .command("mr-discussion-create")
+  .description("Start a new discussion thread on a merge request")
+  .requiredOption("--iid <iid>", "Merge request internal ID")
+  .requiredOption("--body <text>", "Discussion body text")
+  .option("--project <id>", "Project ID or path")
+  .action(async (opts) => {
+    try {
+      await mrDiscussionCreate({
+        iid: opts.iid,
+        body: opts.body,
+        project: opts.project,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+gitlab
+  .command("mr-discussion-reply")
+  .description("Reply to an existing discussion thread")
+  .requiredOption("--discussion-id <id>", "Discussion ID to reply to")
+  .requiredOption("--body <text>", "Reply body text")
+  .option("--project <id>", "Project ID or path")
+  .action(async (opts) => {
+    try {
+      await mrDiscussionReply({
+        discussionId: opts.discussionId,
+        body: opts.body,
+        project: opts.project,
       });
     } catch (err) {
       handleCliError(err);

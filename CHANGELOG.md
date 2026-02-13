@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Issue tracker fallback** - When Jira is not configured, TUI and setup wizard suggest using GitHub or GitLab Issues instead.
 - **`issueTracker` preference** - Configure default issue tracker (`jira`, `github`, or `gitlab`) in preferences.
 - **Multi-source TUI** - Terminal UI now supports Jira, GitHub Issues, and GitLab Issues based on configuration.
+- **Branch naming presets** - Setup wizard now offers 4 preset branch patterns including conventional-branch style (`{type}/{key}-{description}`), plus custom option.
+- **Commit message presets** - Setup wizard now offers 4 preset commit styles (Conventional Commits, Jira prefix, etc.), plus custom template option.
+- **GitLab MR discussion threading** - New commands `mr-discussion-list`, `mr-discussion-create`, `mr-discussion-reply` for threaded MR comments instead of standalone notes.
 
 ## [1.1.0] - 2026-02-13
 

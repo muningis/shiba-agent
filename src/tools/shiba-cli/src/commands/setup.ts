@@ -196,33 +196,48 @@ export async function setup(opts: SetupOpts): Promise<void> {
 
   const config = loadGlobalConfig();
   const currentJira = config.jira || {};
+  const currentlyHasJira = !!(currentJira.host && currentJira.email && currentJira.token);
 
   print("");
-  print("Configure Jira API access (get token at https://id.atlassian.com/manage-profile/security/api-tokens)");
-  print("");
-
-  const jiraHost = await prompt(
+  const enableJira = await prompt(
     rl,
-    `Jira host URL [${currentJira.host || "https://company.atlassian.net"}]: `
-  );
-  const jiraEmail = await prompt(
-    rl,
-    `Jira email [${currentJira.email || ""}]: `
-  );
-  const jiraToken = await prompt(
-    rl,
-    `Jira API token [${currentJira.token ? "****" : ""}]: `
+    `Enable Jira integration? (yes/no) [${currentlyHasJira ? "yes" : "no"}]: `
   );
 
-  // Save Jira config
-  config.jira = {
-    host: jiraHost || currentJira.host,
-    email: jiraEmail || currentJira.email,
-    token: jiraToken || currentJira.token,
-  };
+  const wantsJira = enableJira.toLowerCase() === "yes" ||
+    (enableJira === "" && currentlyHasJira);
 
-  // Check if Jira is configured
-  const hasJira = !!(config.jira?.host && config.jira?.email && config.jira?.token);
+  let hasJira = false;
+  if (wantsJira) {
+    print("");
+    print("Configure Jira API access (get token at https://id.atlassian.com/manage-profile/security/api-tokens)");
+    print("");
+
+    const jiraHost = await prompt(
+      rl,
+      `Jira host URL [${currentJira.host || "https://company.atlassian.net"}]: `
+    );
+    const jiraEmail = await prompt(
+      rl,
+      `Jira email [${currentJira.email || ""}]: `
+    );
+    const jiraToken = await prompt(
+      rl,
+      `Jira API token [${currentJira.token ? "****" : ""}]: `
+    );
+
+    // Save Jira config
+    config.jira = {
+      host: jiraHost || currentJira.host,
+      email: jiraEmail || currentJira.email,
+      token: jiraToken || currentJira.token,
+    };
+
+    hasJira = !!(config.jira?.host && config.jira?.email && config.jira?.token);
+  } else {
+    // Clear Jira config if user doesn't want it
+    config.jira = undefined;
+  }
 
   // --- Preferences ---
   printHeader("Preferences");
@@ -291,16 +306,81 @@ export async function setup(opts: SetupOpts): Promise<void> {
 
   // Branch naming
   print("");
-  const branchPattern = await prompt(
-    rl,
-    `Branch naming pattern [${currentPrefs.branchNaming?.pattern || defaults.branchNaming.pattern}]: `
-  );
+  print("Branch naming pattern:");
+  print("  1. {key}/{description}           - PROJ-123/add-login-button");
+  print("  2. {type}/{key}-{description}    - feat/PROJ-123-add-login-button (conventional-branch style)");
+  print("  3. {type}/{description}          - feat/add-login-button");
+  print("  4. {key}-{description}           - PROJ-123-add-login-button");
+  print("  5. Custom pattern");
+  print("");
+
+  const currentPattern = currentPrefs.branchNaming?.pattern || defaults.branchNaming.pattern;
+  const patternChoice = await prompt(rl, `Select pattern (1-5) or press Enter for current [${currentPattern}]: `);
+
+  let branchPattern: string;
+  switch (patternChoice) {
+    case "1":
+      branchPattern = "{key}/{description}";
+      break;
+    case "2":
+      branchPattern = "{type}/{key}-{description}";
+      break;
+    case "3":
+      branchPattern = "{type}/{description}";
+      break;
+    case "4":
+      branchPattern = "{key}-{description}";
+      break;
+    case "5":
+      print("  Placeholders: {key}, {description}, {type}");
+      branchPattern = await prompt(rl, "  Custom pattern: ") || currentPattern;
+      break;
+    default:
+      branchPattern = currentPattern;
+  }
 
   // Commit style
-  const commitStyle = await prompt(
-    rl,
-    `Commit message style (conventional/custom) [${currentPrefs.commitMessage?.style || defaults.commitMessage.style}]: `
-  );
+  print("");
+  print("Commit message style:");
+  print("  1. Conventional Commits      - feat(scope): description");
+  print("  2. Jira prefix               - PROJ-123: description");
+  print("  3. Jira prefix + type        - PROJ-123 feat: description");
+  print("  4. Type + Jira               - feat: PROJ-123 description");
+  print("  5. Custom template");
+  print("");
+
+  const currentStyle = currentPrefs.commitMessage?.style || defaults.commitMessage.style;
+  const currentTemplate = currentPrefs.commitMessage?.template;
+  const styleChoice = await prompt(rl, `Select style (1-5) or press Enter for current [${currentStyle}${currentTemplate ? `: ${currentTemplate}` : ""}]: `);
+
+  let commitStyle: "conventional" | "custom";
+  let commitTemplate: string | undefined;
+  switch (styleChoice) {
+    case "1":
+      commitStyle = "conventional";
+      commitTemplate = undefined;
+      break;
+    case "2":
+      commitStyle = "custom";
+      commitTemplate = "{key}: {description}";
+      break;
+    case "3":
+      commitStyle = "custom";
+      commitTemplate = "{key} {type}: {description}";
+      break;
+    case "4":
+      commitStyle = "custom";
+      commitTemplate = "{type}: {key} {description}";
+      break;
+    case "5":
+      commitStyle = "custom";
+      print("  Placeholders: {key}, {type}, {scope}, {description}");
+      commitTemplate = await prompt(rl, "  Custom template: ") || currentTemplate || "{type}: {description}";
+      break;
+    default:
+      commitStyle = currentStyle;
+      commitTemplate = currentTemplate;
+  }
 
   // Shiba signature
   const addSignature = await prompt(
@@ -313,11 +393,11 @@ export async function setup(opts: SetupOpts): Promise<void> {
   // Build preferences
   const newPrefs: ShibaPreferences = {
     branchNaming: {
-      pattern: branchPattern || currentPrefs.branchNaming?.pattern || defaults.branchNaming.pattern,
+      pattern: branchPattern,
     },
     commitMessage: {
-      style: (commitStyle as "conventional" | "custom") || currentPrefs.commitMessage?.style || defaults.commitMessage.style,
-      template: currentPrefs.commitMessage?.template,
+      style: commitStyle,
+      template: commitTemplate,
     },
     signatures: {
       shibaSignature: addSignature.toLowerCase() === "yes" ||
@@ -353,7 +433,7 @@ export async function setup(opts: SetupOpts): Promise<void> {
     print(`  workflow.transitions.onMerge: ${newPrefs.workflow.transitions?.onMerge}`);
   }
   print(`  branchNaming.pattern: ${newPrefs.branchNaming?.pattern}`);
-  print(`  commitMessage.style: ${newPrefs.commitMessage?.style}`);
+  print(`  commitMessage.style: ${newPrefs.commitMessage?.style}${newPrefs.commitMessage?.template ? ` (${newPrefs.commitMessage.template})` : ""}`);
   print(`  signatures.shibaSignature: ${newPrefs.signatures?.shibaSignature}`);
 
   successResponse({

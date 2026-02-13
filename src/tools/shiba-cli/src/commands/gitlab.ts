@@ -172,6 +172,107 @@ export async function mrComment(opts: MRCommentOpts): Promise<void> {
   });
 }
 
+// MR Discussion List
+export interface MRDiscussionListOpts {
+  iid: string;
+  project?: string;
+}
+
+export async function mrDiscussionList(opts: MRDiscussionListOpts): Promise<void> {
+  requireCli(GLAB_CLI, GLAB_INSTALL_HINT);
+
+  const args = ["mr", "discussion", "list", opts.iid, "-F", "json"];
+  if (opts.project) args.push("-R", opts.project);
+
+  const result = execCli(GLAB_CLI, args);
+
+  if (result.exitCode !== 0) {
+    errorResponse("LIST_FAILED", result.stderr || "Failed to list discussions");
+  }
+
+  try {
+    const discussions = JSON.parse(result.stdout);
+    const summaries = (Array.isArray(discussions) ? discussions : []).map((d: Record<string, unknown>) => ({
+      id: d.id as string,
+      notes: ((d.notes as Record<string, unknown>[]) ?? []).map(n => ({
+        id: n.id as number,
+        body: n.body as string,
+        author: (n.author as Record<string, string>)?.username ?? "unknown",
+        createdAt: n.created_at as string,
+      })),
+    }));
+    successResponse(summaries);
+  } catch {
+    successResponse([]);
+  }
+}
+
+// MR Discussion Create (start a new thread)
+export interface MRDiscussionCreateOpts {
+  iid: string;
+  body: string;
+  project?: string;
+}
+
+export async function mrDiscussionCreate(opts: MRDiscussionCreateOpts): Promise<void> {
+  requireCli(GLAB_CLI, GLAB_INSTALL_HINT);
+
+  const signedBody = appendCommentSignature(opts.body);
+  const args = ["mr", "discussion", "create", opts.iid, "-m", signedBody];
+  if (opts.project) args.push("-R", opts.project);
+
+  const result = execCli(GLAB_CLI, args);
+
+  if (result.exitCode !== 0) {
+    errorResponse("CREATE_FAILED", result.stderr || "Failed to create discussion");
+  }
+
+  // glab outputs the discussion ID in the response
+  // Try to parse JSON if available, otherwise extract from text
+  let discussionId = "";
+  try {
+    const parsed = JSON.parse(result.stdout);
+    discussionId = parsed.id ?? "";
+  } catch {
+    // Try to extract discussion ID from text output
+    const idMatch = result.stdout.match(/discussion[:\s]+([a-f0-9]+)/i);
+    discussionId = idMatch?.[1] ?? "";
+  }
+
+  successResponse({
+    discussionId,
+    body: signedBody,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+// MR Discussion Reply (reply within existing thread)
+export interface MRDiscussionReplyOpts {
+  discussionId: string;
+  body: string;
+  project?: string;
+}
+
+export async function mrDiscussionReply(opts: MRDiscussionReplyOpts): Promise<void> {
+  requireCli(GLAB_CLI, GLAB_INSTALL_HINT);
+
+  const signedBody = appendCommentSignature(opts.body);
+  const args = ["mr", "discussion", "reply", opts.discussionId, "-m", signedBody];
+  if (opts.project) args.push("-R", opts.project);
+
+  const result = execCli(GLAB_CLI, args);
+
+  if (result.exitCode !== 0) {
+    errorResponse("REPLY_FAILED", result.stderr || "Failed to reply to discussion");
+  }
+
+  successResponse({
+    discussionId: opts.discussionId,
+    body: signedBody,
+    createdAt: new Date().toISOString(),
+  });
+}
+
 // Pipeline Status
 export interface PipelineStatusOpts {
   project: string;
