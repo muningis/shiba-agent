@@ -341,3 +341,154 @@ Comprehensive module-by-module code review with proposed changes.
 
 ### Low (nice to have)
 - Various small improvements documented in each section above
+
+---
+
+## 10. New Code Review (Post-Refactor: CLI wrapping, GitHub, Env Isolation, Workflow, Tickets)
+
+The following review covers the 4 commits merged into `main` that refactored the codebase to wrap official CLIs (`glab`, `jira-cli`, `gh`) instead of using Node.js libraries, and added GitHub support, environment isolation, workflow automation, and ticket notes.
+
+### 10.1 CLI Execution — `shared/src/cli/exec.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.1.1 | **Info** | Clean utility with `execCli()`, `isCliAvailable()`, `requireCli()`. 10MB buffer is reasonable. `spawnSync` with `stdio: "pipe"` is correct for capturing output. | No change needed. |
+
+### 10.2 Environment Variables — `shared/src/env.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.2.1 | **Info** | Simple utility loading `.env` from repo root. `getEnv()` with fallback and `requireEnv()` that throws. Clean. | No change needed. |
+
+### 10.3 Preferences — `shared/src/config/preferences.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.3.1 | **Info** | Well-documented interfaces for branch naming, commit messages, signatures, workflow transitions. Sane defaults. | No change needed. |
+
+### 10.4 Environment Commands — `commands/env.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.4.1 | **High** | **Shell injection in `execSync` calls.** Lines 85, 95, 145, 246: Branch/environment names are interpolated directly into shell strings: `execSync(\`git checkout -b ${opts.name}\`)`. While `opts.name` is validated with `/^[a-zA-Z0-9_-]+$/` at line 73 in `envCreate`, other callers like `envUse` (line 145) and `envDelete` (line 246) do **not** validate the name before passing it to `execSync`. A name like `; rm -rf /` would execute arbitrary commands. | **Either:** (a) validate `opts.name` in every function that uses it in `execSync`, or (b) use `spawnSync("git", ["checkout", "-b", opts.name])` instead of string interpolation — `spawnSync` with array args is not subject to shell injection. |
+| 10.4.2 | **Medium** | `envMigrate()` (line 315): Uses `execSync(\`cp -r "${from}"/* "${to}"/ 2>/dev/null \|\| true\`)` which silently suppresses ALL errors, including permissions errors and disk-full conditions. Migrated data could be incomplete with no indication. | At minimum, check that the destination has files after copy. Or use Node's `fs.cpSync()` (available in Node 16.7+) for proper error handling. |
+| 10.4.3 | **Medium** | `updateSymlink()` (line 387-389): When a backup already exists at the backup path, the function silently deletes the existing directory with `rmSync(linkPath, { recursive: true })`. This means re-running `envUse` can destroy user config data if the symlink setup was partially completed before. | Prompt the user or refuse to overwrite instead of silent deletion. At minimum, log a warning to stderr. |
+| 10.4.4 | **Low** | `envList()` (line 175): `b.replace(/^\* /, "")` to strip the current branch marker. Regex also matches branch names that start with `* ` literally (unlikely but possible with bare repos). | Use `git branch --list --format='%(refname:short)'` for unambiguous output. |
+
+### 10.5 GitHub Commands — `commands/github.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.5.1 | **Medium** | `prList` and `ghIssueList` (lines 102, 292): `catch { successResponse([]) }` silently returns empty array when `gh` output parsing fails. If `gh` changes its JSON format, this hides the breakage from users — they just see no results. | Return an error or at minimum log a warning to stderr: `console.error("Warning: Failed to parse gh output")`. |
+| 10.5.2 | **Medium** | `prList` (line 99): `pr.isDraft as boolean ?? false` — operator precedence bug. `as boolean` has higher precedence than `??`, so this is `(pr.isDraft as boolean) ?? false`. If `isDraft` is `undefined`, the cast makes it `undefined as boolean` which is truthy for `??`. Use `(pr.isDraft ?? false) as boolean` or just `Boolean(pr.isDraft)`. | Fix operator precedence: `draft: Boolean(pr.isDraft)`. |
+| 10.5.3 | **Low** | All `gh` commands use `--json` flag for list operations (good!) but text parsing for create operations (lines 41-42, 233-234: regex on stdout). | Consider using `gh pr create --json url,number` if supported by the user's `gh` version. Document minimum `gh` version. |
+
+### 10.6 GitLab Commands — `commands/gitlab.ts` (refactored)
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.6.1 | **Medium** | Same pattern as GitHub: uses `execCli("glab", ...)` and parses output. The `glab` CLI uses `--output json` but the code doesn't always pass it. Check all commands have proper JSON output mode. | Audit each glab call to ensure `--output json` or `--json` is used where available. |
+
+### 10.7 Jira Commands — `commands/jira.ts` (refactored)
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.7.1 | **High** | **Fragile text parser.** `parseJiraCliOutput()` (lines 83-176) parses `jira-cli --raw` output with line-by-line string matching (`line.startsWith("Summary:")`, etc.). This is extremely fragile — any change to jira-cli's output format silently breaks parsing. The comment regex on line 149 (`/^\s*[-*]?\s*(.+?)\s*\((.+?)\):\s*(.+)$/`) only matches a specific comment format. | Use `jira-cli`'s structured output when available. `jira issue view KEY --raw --output json` or `--template` flags may provide more reliable formats. If raw text parsing is unavoidable, add comprehensive tests with pinned jira-cli output samples. |
+| 10.7.2 | **Medium** | `parseJiraCliOutput` is duplicated verbatim in both `commands/jira.ts` (lines 83-176) and `tasks/fetch.ts` (lines 24-95). Same fragile parser in two places. | Extract to a shared utility in `src/tools/shiba-cli/src/utils/jira-parser.ts`. |
+| 10.7.3 | **Low** | `issueSearch` (line 351): Splits plain text output by `\s{2,}` (two or more spaces). Column values containing double spaces break parsing. | Same as above — prefer `jira issue list --output json` if available. |
+
+### 10.8 Branch Commands — `commands/branch.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.8.1 | **High** | **Shell injection.** Line 48: `execSync(\`git checkout -b ${branchName}\`)` where `branchName` comes from user-provided `--description` via `slugify()`. While `slugify()` restricts to `[a-z0-9-]`, the `--key` component is not slugified — it's interpolated raw. A key like `PROJ-123; cat /etc/passwd` would execute. | Use `spawnSync("git", ["checkout", "-b", branchName])` instead of template string in `execSync`. |
+| 10.8.2 | **Low** | `branch()` just generates a name and returns it — doesn't validate it's a legal git branch name. Names exceeding 255 chars or containing `..` would fail at `branchCreate`. | Add `git check-ref-format --branch <name>` validation. |
+
+### 10.9 Commit Commands — `commands/commit.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.9.1 | **Info** | Simple, focused. Delegates to `generateCommitMessage()`. Correct. | No change needed. |
+
+### 10.10 Config Commands — `commands/config.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.10.1 | **Medium** | `configSet()` (line 78): Accepts `commit-style` value without validating the `template` parameter. A custom style with no template silently falls back to conventional. | Require `--template` when style is `"custom"`. Error if template is empty. |
+| 10.10.2 | **Low** | Line 99: Valid keys list doesn't include workflow-related config (`workflow-enabled`, `transition-on-branch-create`, etc.) even though `preferences.ts` defines them. | Add workflow config keys to the valid keys list. |
+
+### 10.11 Notes Commands — `commands/notes.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.11.1 | **Low** | Category validation is duplicated: lines 31 and 118 both define the same `validCategories` array inline. | Extract to a shared constant: `export const VALID_CATEGORIES: NoteCategory[] = [...]` in `tickets/types.ts`. |
+
+### 10.12 Workflow Commands — `commands/workflow.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.12.1 | **Info** | Clean implementation. Non-fatal error handling (doesn't fail if Jira is unavailable). Correctly skips draft MRs. | No change needed. |
+
+### 10.13 Config Resolution — `config/resolve.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.13.1 | **Medium** | `getEffectivePreferences()` (lines 16-58): Manual deep merge of every preference field. Adding a new preference requires modifying this 40-line function in sync with the type definition. Error-prone and violates DRY. | Write a generic recursive merge utility: `deepMerge(defaults, global, project)` that handles nested objects. Or use a library like `lodash.merge`. |
+| 10.13.2 | **Low** | `interpolateTemplate()` (lines 84-97): Uses `string.replace()` with static strings. If a value contains `$1`, `$&`, etc., JavaScript's replace interprets them as backreferences. | Use function replacement: `result.replace(/{key}/g, () => values.key!)` to prevent backreference interpretation. |
+| 10.13.3 | **Low** | `appendCommentSignature()` (line 144): The signature `"🐕 Shiba Agent"` is added after `"Co-Authored-By: Shiba Agent"` — but `Co-Authored-By` is a git trailer convention, not a Jira/GitLab comment convention. It has no meaning in a Jira comment. | Use `Co-Authored-By` only in git commits. For Jira/GitLab comments, use just the emoji line. |
+
+### 10.14 Ticket Notes Store — `tickets/store.ts`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.14.1 | **Medium** | `saveTicket()` (line 49): Uses `writeFileSync` directly — not atomic. Same race condition as the original `issues/store.ts` that was fixed in this PR. | Apply the same atomic write pattern: write to temp file, rename. |
+| 10.14.2 | **Medium** | `generateId()` (line 8): `Math.random().toString(36).substring(2, 10)` produces 8-char IDs with ~41 bits of entropy. For a per-ticket scope this is usually fine, but concurrent rapid additions could collide. | Append a timestamp component: `Math.random().toString(36).substring(2, 10) + Date.now().toString(36)`. Or use `crypto.randomUUID()`. |
+| 10.14.3 | **Low** | `getCurrentRepo()` and `getCurrentBranch()` (lines 15-31) are called on every `addNote()`. Each spawns a subprocess. | Cache the result for the duration of the CLI invocation (module-level variable). |
+
+### 10.15 TUI Hook — `tui/hooks/useJiraIssues.ts` (refactored)
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.15.1 | **Medium** | Line 45: Splits by `\t\|\s{2,}`. Jira issue summaries containing tabs or double spaces break the parsing silently, producing garbled data. | Use `jira issue list --output json` or `--columns` with a reliable delimiter. |
+
+### 10.16 GitHub Agent — `agents/github-agent.md`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.16.1 | **Info** | Comprehensive documentation. Covers all commands, error handling, and workflow integration. Good behavioral rules. | No change needed. |
+
+### 10.17 Environment Defaults — `.env.default`
+
+| # | Severity | Finding | Proposed Change |
+|---|----------|---------|-----------------|
+| 10.17.1 | **Low** | Only includes `GITLAB_TOKEN`, `JIRA_TOKEN`, `FIGMA_TOKEN`. Missing `GITHUB_TOKEN` even though `gh` may need explicit auth in CI. | Add `GITHUB_TOKEN=` to the template for completeness. |
+
+---
+
+## Summary of New Code Findings
+
+### High (should fix)
+- **10.4.1**: Shell injection in `env.ts` — `envUse` and `envDelete` pass unvalidated names to `execSync`
+- **10.8.1**: Shell injection in `branch.ts` — `--key` is passed raw to `execSync`
+- **10.7.1**: Extremely fragile jira-cli text parser — will break silently on format changes
+
+### Medium (should address)
+- **10.4.2**: `envMigrate` silently suppresses copy errors
+- **10.4.3**: `updateSymlink` silently deletes existing directories
+- **10.5.1**: Silent empty array on `gh` parse failure hides breakage
+- **10.5.2**: Operator precedence bug: `isDraft as boolean ?? false`
+- **10.7.2**: Jira CLI text parser duplicated in two files
+- **10.10.1**: `configSet` accepts custom commit style with no template
+- **10.13.1**: Manual deep merge of 40 lines — error-prone when adding new preferences
+- **10.14.1**: `tickets/store.ts` `saveTicket()` not atomic (same bug we fixed in `issues/store.ts`)
+- **10.14.2**: Weak note ID generation could collide
+- **10.15.1**: TUI Jira hook parses columns by whitespace — fragile
+
+### Low (nice to have)
+- **10.4.4**: `envList` branch name parsing could use `--format`
+- **10.10.2**: Config set missing workflow keys
+- **10.11.1**: Note category validation duplicated
+- **10.13.2**: Template replace vulnerable to backreferences
+- **10.13.3**: `Co-Authored-By` misused in Jira comments
+- **10.14.3**: Git subprocess called on every `addNote()`
+- **10.17.1**: Missing `GITHUB_TOKEN` in `.env.default`
