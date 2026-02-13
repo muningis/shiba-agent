@@ -1,10 +1,17 @@
 import { spawnSync } from "child_process";
+import { readFileSync } from "fs";
 import { successResponse, errorResponse } from "@shiba-agent/shared";
-import { resolve } from "path";
+import { resolve, join } from "path";
 
 export async function update(): Promise<void> {
   // Shiba is installed at ~/.shiba-agent
   const shibaDir = resolve(process.env.HOME || "~", ".shiba-agent");
+
+  // Capture current version before update
+  const beforeResult = spawnSync("shiba", ["--version"], {
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  const versionBefore = beforeResult.stdout?.toString().trim() || "unknown";
 
   // Step 1: Fetch latest
   console.error("Fetching latest from origin/main...");
@@ -31,7 +38,7 @@ export async function update(): Promise<void> {
     );
   }
 
-  // Step 3: Run setup.sh
+  // Step 3: Run setup.sh (builds + re-links)
   console.error("Rebuilding...");
   const setup = spawnSync("./setup.sh", [], {
     cwd: shibaDir,
@@ -43,8 +50,23 @@ export async function update(): Promise<void> {
     errorResponse("SETUP_FAILED", "setup.sh failed");
   }
 
+  // Read version from source package.json (post-pull)
+  const pkgPath = join(shibaDir, "src/tools/shiba-cli/package.json");
+  let versionAfter: string;
+  try {
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+    versionAfter = pkg.version;
+  } catch {
+    versionAfter = "unknown";
+  }
+
   successResponse({
     updated: true,
-    message: "Shiba updated successfully",
+    versionBefore,
+    versionAfter,
+    message:
+      versionBefore === versionAfter
+        ? `Shiba is up to date (v${versionAfter})`
+        : `Shiba updated from v${versionBefore} to v${versionAfter}`,
   });
 }
