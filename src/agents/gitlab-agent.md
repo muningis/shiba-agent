@@ -116,7 +116,7 @@ Common error codes and what to do:
 
 | Code | Meaning | Recovery |
 |------|---------|----------|
-| `MISSING_ENV` | Token/host not set | Tell user to export the variable |
+| `MISSING_CONFIG` | Token/host not set | Tell user to configure credentials in `~/.shiba-agent/config/config.json` |
 | `UNAUTHORIZED` | Token invalid or expired | Ask user to refresh token |
 | `NOT_FOUND` | Project or MR doesn't exist | Verify the project path or MR IID |
 | `CONFLICT` | Merge conflicts exist | Tell user to resolve conflicts first |

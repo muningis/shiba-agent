@@ -86,10 +86,9 @@ Capture the MR IID from the response.
 Record the MR in the tracked issue:
 ```bash
 shiba issue add-mr --key <KEY> \
+  --project "<group/project>" \
   --iid <MR_IID> \
-  --title "<MR title>" \
-  --url "<MR URL>" \
-  --state opened
+  --primary
 ```
 
 Update progress:

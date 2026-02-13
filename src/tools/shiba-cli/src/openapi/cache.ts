@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, renameSync } from "fs";
 import { join } from "path";
 import { getOapiDir } from "@shiba-agent/shared";
 import type { OpenAPISpec, CachedSpec } from "./types.js";
@@ -39,7 +39,10 @@ export function cacheSpec(name: string, spec: OpenAPISpec): void {
     fetchedAt: new Date().toISOString(),
   };
   const path = getCachedSpecPath(name);
-  writeFileSync(path, JSON.stringify(cached, null, 2) + "\n");
+  // Atomic write: write to temp file then rename (same filesystem = atomic)
+  const tmpPath = path + `.tmp.${process.pid}`;
+  writeFileSync(tmpPath, JSON.stringify(cached, null, 2) + "\n");
+  renameSync(tmpPath, path);
 }
 
 export function listCachedSpecs(): string[] {

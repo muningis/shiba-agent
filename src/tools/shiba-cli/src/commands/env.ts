@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync, rmSync, symlinkSync, lstatSync, readlinkSync, renameSync } from "fs";
+import { existsSync, mkdirSync, rmSync, symlinkSync, lstatSync, readlinkSync, renameSync, cpSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 import { createInterface } from "readline";
 import { stdin, stdout } from "process";
 import {
@@ -33,8 +33,8 @@ export async function envInit(): Promise<void> {
   }
 
   try {
-    execSync("git init", { cwd: dataDir, stdio: "pipe" });
-    execSync("git commit --allow-empty -m 'Initialize shiba data repository'", {
+    spawnSync("git", ["init"], { cwd: dataDir, stdio: "pipe" });
+    spawnSync("git", ["commit", "--allow-empty", "-m", "Initialize shiba data repository"], {
       cwd: dataDir,
       stdio: "pipe",
     });
@@ -76,13 +76,16 @@ export async function envCreate(opts: EnvCreateOpts): Promise<void> {
 
   try {
     // Check if branch already exists
-    const branches = execSync("git branch --list", { cwd: dataDir, encoding: "utf-8" });
+    const branches = spawnSync("git", ["branch", "--list"], { cwd: dataDir, encoding: "utf-8", stdio: "pipe" }).stdout;
     if (branches.split("\n").some((b) => b.trim().replace(/^\* /, "") === opts.name)) {
       errorResponse("ALREADY_EXISTS", `Environment '${opts.name}' already exists.`);
     }
 
-    // Create new branch
-    execSync(`git checkout -b ${opts.name}`, { cwd: dataDir, stdio: "pipe" });
+    // Create new branch (spawnSync to avoid shell injection)
+    const branchResult = spawnSync("git", ["checkout", "-b", opts.name], { cwd: dataDir, encoding: "utf-8", stdio: "pipe" });
+    if (branchResult.status !== 0) {
+      errorResponse("CREATE_FAILED", branchResult.stderr || "Failed to create git branch");
+    }
 
     // Create directory structure for this environment
     const dirs = ["oapi", "issues", "figma", "glab", "jira"];
@@ -91,11 +94,15 @@ export async function envCreate(opts: EnvCreateOpts): Promise<void> {
     }
 
     // Commit the structure
-    execSync("git add -A", { cwd: dataDir, stdio: "pipe" });
-    execSync(`git commit --allow-empty -m "Create environment: ${opts.name}"`, {
+    spawnSync("git", ["add", "-A"], { cwd: dataDir, stdio: "pipe" });
+    const commitResult = spawnSync("git", ["commit", "--allow-empty", "-m", `Create environment: ${opts.name}`], {
       cwd: dataDir,
+      encoding: "utf-8",
       stdio: "pipe",
     });
+    if (commitResult.status !== 0) {
+      errorResponse("CREATE_FAILED", commitResult.stderr || "Failed to commit environment structure");
+    }
 
     successResponse({
       created: opts.name,
@@ -121,7 +128,7 @@ export async function envUse(opts: EnvUseOpts): Promise<void> {
   }
 
   // Check if environment exists
-  const branches = execSync("git branch --list", { cwd: dataDir, encoding: "utf-8" });
+  const branches = spawnSync("git", ["branch", "--list"], { cwd: dataDir, encoding: "utf-8", stdio: "pipe" }).stdout;
   const envExists = branches.split("\n").some((b) => b.trim().replace(/^\* /, "") === opts.name);
 
   if (!envExists) {
@@ -141,8 +148,11 @@ export async function envUse(opts: EnvUseOpts): Promise<void> {
   }
 
   try {
-    // Switch git branch
-    execSync(`git checkout ${opts.name}`, { cwd: dataDir, stdio: "pipe" });
+    // Switch git branch (spawnSync to avoid shell injection)
+    const switchResult = spawnSync("git", ["checkout", opts.name], { cwd: dataDir, encoding: "utf-8", stdio: "pipe" });
+    if (switchResult.status !== 0) {
+      errorResponse("SWITCH_FAILED", switchResult.stderr || "Failed to switch git branch");
+    }
 
     // Update CLI config symlinks
     updateCliSymlinks(dataDir);
@@ -167,7 +177,7 @@ export async function envList(): Promise<void> {
   }
 
   try {
-    const result = execSync("git branch --list", { cwd: dataDir, encoding: "utf-8" });
+    const result = spawnSync("git", ["branch", "--list"], { cwd: dataDir, encoding: "utf-8", stdio: "pipe" }).stdout;
     const branches = result
       .split("\n")
       .map((b) => b.trim())
@@ -223,7 +233,7 @@ export async function envDelete(opts: EnvDeleteOpts): Promise<void> {
   }
 
   // Check if environment exists
-  const branches = execSync("git branch --list", { cwd: dataDir, encoding: "utf-8" });
+  const branches = spawnSync("git", ["branch", "--list"], { cwd: dataDir, encoding: "utf-8", stdio: "pipe" }).stdout;
   const envExists = branches.split("\n").some((b) => b.trim().replace(/^\* /, "") === opts.name);
 
   if (!envExists) {
@@ -243,7 +253,10 @@ export async function envDelete(opts: EnvDeleteOpts): Promise<void> {
   }
 
   try {
-    execSync(`git branch -D ${opts.name}`, { cwd: dataDir, stdio: "pipe" });
+    const deleteResult = spawnSync("git", ["branch", "-D", opts.name], { cwd: dataDir, encoding: "utf-8", stdio: "pipe" });
+    if (deleteResult.status !== 0) {
+      errorResponse("DELETE_FAILED", deleteResult.stderr || "Failed to delete git branch");
+    }
 
     successResponse({
       deleted: opts.name,
@@ -289,11 +302,13 @@ export async function envMigrate(): Promise<void> {
   // Create 'default' environment if not on a branch
   const current = getCurrentEnvironment();
   if (!current || current === "main" || current === "master") {
-    try {
-      execSync("git checkout -b default", { cwd: dataDir, stdio: "pipe" });
-    } catch {
-      // Branch might already exist
-      execSync("git checkout default", { cwd: dataDir, stdio: "pipe" });
+    const createResult = spawnSync("git", ["checkout", "-b", "default"], { cwd: dataDir, encoding: "utf-8", stdio: "pipe" });
+    if (createResult.status !== 0) {
+      // Branch might already exist — try switching to it
+      const switchResult = spawnSync("git", ["checkout", "default"], { cwd: dataDir, encoding: "utf-8", stdio: "pipe" });
+      if (switchResult.status !== 0) {
+        errorResponse("MIGRATE_FAILED", switchResult.stderr || "Failed to create or switch to 'default' environment");
+      }
     }
   }
 
@@ -310,29 +325,22 @@ export async function envMigrate(): Promise<void> {
   for (const { from, to } of migrations) {
     if (existsSync(from)) {
       try {
-        // For directories, copy contents
-        if (lstatSync(from).isDirectory()) {
-          execSync(`cp -r "${from}"/* "${to}"/ 2>/dev/null || true`, { stdio: "pipe" });
-        } else {
-          execSync(`cp "${from}" "${to}"`, { stdio: "pipe" });
-        }
+        cpSync(from, to, { recursive: true, force: true });
         migratedItems.push(from);
-      } catch {
-        // Ignore copy errors
+      } catch (err) {
+        process.stderr.write(`[shiba] Warning: Failed to migrate ${from}: ${err}\n`);
       }
     }
   }
 
   // Commit the migration
-  try {
-    execSync("git add -A", { cwd: dataDir, stdio: "pipe" });
-    execSync("git commit -m 'Migrate existing data to environment structure'", {
-      cwd: dataDir,
-      stdio: "pipe",
-    });
-  } catch {
-    // Nothing to commit
-  }
+  spawnSync("git", ["add", "-A"], { cwd: dataDir, stdio: "pipe" });
+  const migrateCommit = spawnSync("git", ["commit", "-m", "Migrate existing data to environment structure"], {
+    cwd: dataDir,
+    encoding: "utf-8",
+    stdio: "pipe",
+  });
+  // Non-zero is expected if there's nothing to commit — not an error
 
   successResponse({
     migrated: true,
@@ -384,8 +392,9 @@ function updateSymlink(target: string, linkPath: string, backupSuffix: string): 
         const backupPath = `${linkPath}.${backupSuffix}`;
         if (!existsSync(backupPath)) {
           renameSync(linkPath, backupPath);
+          process.stderr.write(`[shiba] Backed up existing config: ${linkPath} -> ${backupPath}\n`);
         } else {
-          // Backup already exists, just remove
+          process.stderr.write(`[shiba] Warning: Removing ${linkPath} (backup already exists at ${backupPath})\n`);
           rmSync(linkPath, { recursive: true });
         }
       }

@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 import { successResponse, errorResponse, isCliAvailable } from "@shiba-agent/shared";
 import { generateBranchName, getEffectivePreferences } from "../config/resolve.js";
 import { issueTransition } from "./jira.js";
@@ -43,12 +43,10 @@ export async function branchCreate(opts: BranchCreateOpts): Promise<void> {
     type: opts.type,
   });
 
-  // Create the git branch
-  try {
-    execSync(`git checkout -b ${branchName}`, { encoding: "utf-8", stdio: "pipe" });
-  } catch (err) {
-    const error = err as { stderr?: string };
-    errorResponse("GIT_FAILED", error.stderr || "Failed to create git branch");
+  // Create the git branch (spawnSync to avoid shell injection)
+  const gitResult = spawnSync("git", ["checkout", "-b", branchName], { encoding: "utf-8", stdio: "pipe" });
+  if (gitResult.status !== 0) {
+    errorResponse("GIT_FAILED", gitResult.stderr || "Failed to create git branch");
   }
 
   // Transition Jira issue (if configured and jira-cli available)

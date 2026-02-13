@@ -1,3 +1,7 @@
+// ADF
+export { parseAdfToText } from "./adf/index.js";
+export type { AdfNode, AdfMark } from "./adf/index.js";
+
 // Environment
 export { getEnv, requireEnv } from "./env.js";
 
@@ -55,6 +59,9 @@ export type {
   WorkflowConfig,
   WorkflowTransitionsConfig,
 } from "./config/preferences.js";
+
+// HTTP
+export { withRetry, isTransientError } from "./http/index.js";
 
 // Output
 export { successResponse, errorResponse } from "./output/json.js";

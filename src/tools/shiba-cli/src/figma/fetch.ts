@@ -1,5 +1,5 @@
-import { getFigmaToken, getFigmaDir, ensureFigmaDir } from "@shiba-agent/shared";
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { getFigmaToken, getFigmaDir, ensureFigmaDir, withRetry } from "@shiba-agent/shared";
+import { existsSync, readFileSync, writeFileSync, renameSync } from "fs";
 import { join } from "path";
 import type {
   FigmaFile,
@@ -17,20 +17,22 @@ const FIGMA_API = "https://api.figma.com/v1";
 const CACHE_MAX_AGE_MS = 60 * 60 * 1000;
 
 async function figmaFetch<T>(endpoint: string): Promise<T> {
-  const token = getFigmaToken();
+  return withRetry(async () => {
+    const token = getFigmaToken();
 
-  const response = await fetch(`${FIGMA_API}${endpoint}`, {
-    headers: {
-      "X-Figma-Token": token,
-    },
-  });
+    const response = await fetch(`${FIGMA_API}${endpoint}`, {
+      headers: {
+        "X-Figma-Token": token,
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Figma API error: ${response.status} - ${error}`);
-  }
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Figma API error: ${response.status} - ${error}`);
+    }
 
-  return response.json() as Promise<T>;
+    return response.json() as Promise<T>;
+  }, "figma-fetch");
 }
 
 function getCachePath(fileKey: string): string {
@@ -64,7 +66,10 @@ function saveToCache(fileKey: string, file: FigmaFile): void {
     file,
     fetchedAt: new Date().toISOString(),
   };
-  writeFileSync(cachePath, JSON.stringify(cached, null, 2));
+  // Atomic write: write to temp file then rename (same filesystem = atomic)
+  const tmpPath = cachePath + `.tmp.${process.pid}`;
+  writeFileSync(tmpPath, JSON.stringify(cached, null, 2));
+  renameSync(tmpPath, cachePath);
 }
 
 /**
@@ -140,31 +145,34 @@ function traverseForTokens(
   colors: ColorToken[],
   typography: TypographyToken[]
 ): void {
-  // Extract fill colors
-  if (node.fills) {
-    for (const fill of node.fills) {
-      if (fill.type === "SOLID" && fill.color && fill.visible !== false) {
-        const hex = rgbaToHex(fill.color.r, fill.color.g, fill.color.b);
-        // Check if this matches a style we're looking for
-        const existing = colors.find((c) => c.value === "#000000");
-        if (existing) {
-          existing.value = hex;
-          existing.opacity = fill.color.a;
+  // Use node.styles to correlate fill/text style keys with token style keys
+  const nodeStyleKeys = node.styles ?? {};
+
+  // Extract fill colors — correlate via node.styles.fill → styleKey
+  const fillStyleKey = nodeStyleKeys["fill"];
+  if (fillStyleKey && node.fills) {
+    const matchingToken = colors.find((c) => c.styleKey === fillStyleKey);
+    if (matchingToken) {
+      for (const fill of node.fills) {
+        if (fill.type === "SOLID" && fill.color && fill.visible !== false) {
+          matchingToken.value = rgbaToHex(fill.color.r, fill.color.g, fill.color.b);
+          matchingToken.opacity = fill.color.a;
+          break;
         }
       }
     }
   }
 
-  // Extract text styles
-  if (node.style && node.type === "TEXT") {
-    const textStyle = node.style;
-    const existing = typography.find((t) => t.fontFamily === "Unknown");
-    if (existing) {
-      existing.fontFamily = textStyle.fontFamily;
-      existing.fontWeight = textStyle.fontWeight;
-      existing.fontSize = textStyle.fontSize;
-      existing.lineHeight = textStyle.lineHeightPx;
-      existing.letterSpacing = textStyle.letterSpacing;
+  // Extract text styles — correlate via node.styles.text → styleKey
+  const textStyleKey = nodeStyleKeys["text"];
+  if (textStyleKey && node.style && node.type === "TEXT") {
+    const matchingToken = typography.find((t) => t.styleKey === textStyleKey);
+    if (matchingToken) {
+      matchingToken.fontFamily = node.style.fontFamily;
+      matchingToken.fontWeight = node.style.fontWeight;
+      matchingToken.fontSize = node.style.fontSize;
+      matchingToken.lineHeight = node.style.lineHeightPx;
+      matchingToken.letterSpacing = node.style.letterSpacing;
     }
   }
 

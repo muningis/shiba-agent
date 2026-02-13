@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, lstatSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, lstatSync, renameSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { homedir } from "os";
@@ -210,5 +210,8 @@ export function loadGlobalConfig(): GlobalConfig {
 
 export function saveGlobalConfig(config: GlobalConfig): void {
   ensureConfigDir();
-  writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2) + "\n");
+  // Atomic write: write to temp file then rename (same filesystem = atomic)
+  const tmpPath = CONFIG_FILE + `.tmp.${process.pid}`;
+  writeFileSync(tmpPath, JSON.stringify(config, null, 2) + "\n");
+  renameSync(tmpPath, CONFIG_FILE);
 }

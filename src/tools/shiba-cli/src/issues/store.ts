@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, readdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, readdirSync, renameSync } from "fs";
 import { join } from "path";
 import { randomUUID } from "crypto";
 import { getIssuesDir, ensureIssuesDir } from "@shiba-agent/shared";
@@ -44,7 +44,10 @@ export function saveIssue(issue: TrackedIssue): void {
   ensureIssuesDir();
   const issuePath = getIssuePath(issue.issueKey);
   issue.updatedAt = new Date().toISOString();
-  writeFileSync(issuePath, JSON.stringify(issue, null, 2) + "\n");
+  // Atomic write: write to temp file then rename (same filesystem = atomic)
+  const tmpPath = issuePath + `.tmp.${process.pid}`;
+  writeFileSync(tmpPath, JSON.stringify(issue, null, 2) + "\n");
+  renameSync(tmpPath, issuePath);
 }
 
 export function listIssues(): string[] {

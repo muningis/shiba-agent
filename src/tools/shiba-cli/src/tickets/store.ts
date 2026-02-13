@@ -1,11 +1,12 @@
-import { existsSync, readFileSync, writeFileSync, readdirSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, readdirSync, renameSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
+import { randomUUID } from "crypto";
 import { getTicketsDir, ensureTicketsDir } from "@shiba-agent/shared";
 import type { TicketNotes, TicketNote, NoteCategory, NoteSummary } from "./types.js";
 
 function generateId(): string {
-  return Math.random().toString(36).substring(2, 10);
+  return randomUUID();
 }
 
 function getTicketPath(key: string): string {
@@ -46,7 +47,10 @@ export function loadTicket(key: string): TicketNotes | null {
 export function saveTicket(ticket: TicketNotes): void {
   ensureTicketsDir();
   ticket.updatedAt = new Date().toISOString();
-  writeFileSync(getTicketPath(ticket.key), JSON.stringify(ticket, null, 2) + "\n");
+  const ticketPath = getTicketPath(ticket.key);
+  const tmpPath = ticketPath + `.tmp.${process.pid}`;
+  writeFileSync(tmpPath, JSON.stringify(ticket, null, 2) + "\n");
+  renameSync(tmpPath, ticketPath);
 }
 
 export function createTicket(key: string): TicketNotes {
