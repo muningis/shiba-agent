@@ -1,7 +1,15 @@
 import { spawnSync } from "child_process";
 import { readFileSync } from "fs";
-import { successResponse, errorResponse, getRepoRoot } from "@shiba-agent/shared";
+import { successResponse, errorResponse, getRepoRoot, loadGlobalConfig, getDefaultPreferences } from "@shiba-agent/shared";
 import { join } from "path";
+import { runInteractiveSetup, type SetupResult } from "./setup.js";
+
+function hasUnconfiguredPreferences(): boolean {
+  const config = loadGlobalConfig();
+  const current = config.preferences || {};
+  const defaults = getDefaultPreferences();
+  return Object.keys(defaults).some(key => !(key in current));
+}
 
 export async function update(): Promise<void> {
   const shibaDir = getRepoRoot();
@@ -59,6 +67,13 @@ export async function update(): Promise<void> {
     versionAfter = "unknown";
   }
 
+  // Check if setup wizard should run
+  let setupResult: SetupResult | null = null;
+  if (versionBefore !== versionAfter || hasUnconfiguredPreferences()) {
+    console.error("New configuration options detected — launching setup wizard...");
+    setupResult = await runInteractiveSetup({ reset: true });
+  }
+
   successResponse({
     updated: true,
     versionBefore,
@@ -67,5 +82,6 @@ export async function update(): Promise<void> {
       versionBefore === versionAfter
         ? `Shiba is up to date (v${versionAfter})`
         : `Shiba updated from v${versionBefore} to v${versionAfter}`,
+    setup: setupResult,
   });
 }

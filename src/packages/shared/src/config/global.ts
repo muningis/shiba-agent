@@ -91,6 +91,7 @@ const FIGMA_DIR = join(DATA_DIR, "figma");
 const GLAB_DIR = join(DATA_DIR, "glab");
 const JIRA_DIR = join(DATA_DIR, "jira");
 const TICKETS_DIR = join(DATA_DIR, "tickets");
+const CUSTOM_AGENTS_DIR = join(DATA_DIR, "agents");
 
 export function getConfigDir(): string {
   return CONFIG_DIR;
@@ -173,6 +174,16 @@ export function ensureJiraDir(): void {
 export function ensureTicketsDir(): void {
   if (!existsSync(TICKETS_DIR)) {
     mkdirSync(TICKETS_DIR, { recursive: true });
+  }
+}
+
+export function getCustomAgentsDir(): string {
+  return CUSTOM_AGENTS_DIR;
+}
+
+export function ensureCustomAgentsDir(): void {
+  if (!existsSync(CUSTOM_AGENTS_DIR)) {
+    mkdirSync(CUSTOM_AGENTS_DIR, { recursive: true });
   }
 }
 
