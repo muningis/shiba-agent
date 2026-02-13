@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { ScrollView } from "./ScrollView.js";
 import type { CachedSpec } from "../../openapi/types.js";
 
 interface OpenAPISpecDetailProps {
@@ -33,6 +34,7 @@ export function OpenAPISpecDetail({ name, cached }: OpenAPISpecDetailProps) {
   }
 
   return (
+    <ScrollView>
     <Box flexDirection="column" padding={1}>
       {/* Header */}
       <Text bold color="cyan">{name}</Text>
@@ -101,5 +103,6 @@ export function OpenAPISpecDetail({ name, cached }: OpenAPISpecDetailProps) {
         </Box>
       )}
     </Box>
+    </ScrollView>
   );
 }

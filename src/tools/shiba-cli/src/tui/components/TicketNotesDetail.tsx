@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { ScrollView } from "./ScrollView.js";
 import type { TicketNotes } from "../../tickets/index.js";
 
 interface TicketNotesDetailProps {
@@ -17,6 +18,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export function TicketNotesDetail({ ticket }: TicketNotesDetailProps) {
   return (
+    <ScrollView>
     <Box flexDirection="column" padding={1}>
       <Text bold color="cyan">{ticket.key}</Text>
       <Text dimColor>Notes: {ticket.notes.length} | Updated: {new Date(ticket.updatedAt).toLocaleString()}</Text>
@@ -37,5 +39,6 @@ export function TicketNotesDetail({ ticket }: TicketNotesDetailProps) {
         ))}
       </Box>
     </Box>
+    </ScrollView>
   );
 }

@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { ScrollView } from "./ScrollView.js";
 import type { CachedFigmaFile } from "../../figma/types.js";
 
 interface FigmaCacheDetailProps {
@@ -13,6 +14,7 @@ export function FigmaCacheDetail({ fileKey, cached }: FigmaCacheDetailProps) {
   const styles = Object.entries(file.styles ?? {});
 
   return (
+    <ScrollView>
     <Box flexDirection="column" padding={1}>
       {/* Header */}
       <Text bold color="cyan">{file.name}</Text>
@@ -77,5 +79,6 @@ export function FigmaCacheDetail({ fileKey, cached }: FigmaCacheDetailProps) {
         )}
       </Box>
     </Box>
+    </ScrollView>
   );
 }

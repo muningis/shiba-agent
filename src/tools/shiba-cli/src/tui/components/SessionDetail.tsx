@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { ScrollView } from "./ScrollView.js";
 import type { Session } from "../types.js";
 import type { SessionGitInfo } from "../hooks/useSessions.js";
 
@@ -24,6 +25,7 @@ export function SessionDetail({ session, gitInfo }: SessionDetailProps) {
   const statusColor = STATUS_COLORS[session.status];
 
   return (
+    <ScrollView>
     <Box flexDirection="column" padding={1}>
       {/* Header */}
       <Text bold color="cyan">{session.issueKey}</Text>
@@ -90,5 +92,6 @@ export function SessionDetail({ session, gitInfo }: SessionDetailProps) {
         )}
       </Box>
     </Box>
+    </ScrollView>
   );
 }

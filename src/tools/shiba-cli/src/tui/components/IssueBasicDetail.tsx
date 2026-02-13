@@ -1,6 +1,8 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { ScrollView } from "./ScrollView.js";
 import type { IssueBasic, IssueComment } from "../types.js";
+
 
 interface IssueBasicDetailProps {
   issue: IssueBasic;
@@ -23,6 +25,7 @@ export function IssueBasicDetail({
   const hasEnrichedData = description !== undefined;
 
   return (
+    <ScrollView>
     <Box flexDirection="column" padding={1}>
       {/* Header */}
       <Text bold color="cyan">{issue.key}</Text>
@@ -118,5 +121,6 @@ export function IssueBasicDetail({
         </Box>
       )}
     </Box>
+    </ScrollView>
   );
 }
