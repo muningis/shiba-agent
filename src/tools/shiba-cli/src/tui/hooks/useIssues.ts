@@ -50,9 +50,9 @@ function detectAvailableTrackers(): IssueTracker[] {
 export function useIssues(): UseIssuesResult {
   const availableTrackers = useMemo(() => detectAvailableTrackers(), []);
 
-  const jiraResult = useJiraIssues();
-  const githubResult = useGitHubIssues();
-  const gitlabResult = useGitLabIssues();
+  const jiraResult = useJiraIssues({ enabled: availableTrackers.includes("jira") });
+  const githubResult = useGitHubIssues({ enabled: availableTrackers.includes("github") });
+  const gitlabResult = useGitLabIssues({ enabled: availableTrackers.includes("gitlab") });
 
   const groups = useMemo(() => {
     const result: TrackerGroup[] = [];

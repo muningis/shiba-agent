@@ -9,12 +9,14 @@ interface UseJiraIssuesResult {
   refresh: () => void;
 }
 
-export function useJiraIssues(): UseJiraIssuesResult {
+export function useJiraIssues({ enabled = true }: { enabled?: boolean } = {}): UseJiraIssuesResult {
   const [issues, setIssues] = useState<JiraIssueBasic[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
   const fetchIssues = useCallback(async () => {
+    if (!enabled) return;
+
     setLoading(true);
     setError(null);
 
@@ -45,11 +47,11 @@ export function useJiraIssues(): UseJiraIssuesResult {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
-    fetchIssues();
-  }, [fetchIssues]);
+    if (enabled) fetchIssues();
+  }, [fetchIssues, enabled]);
 
   return { issues, loading, error, refresh: fetchIssues };
 }
