@@ -101,6 +101,109 @@ shiba jira issue-assign \
 
 Use `--assignee "unassigned"` to clear the assignment.
 
+## Issue Creation Workflow
+
+When the user asks you to create a Jira issue, do NOT just pass their input through. Follow this workflow:
+
+### 1. Analyze the Request
+
+- Evaluate the user's summary for clarity, specificity, and actionability
+- Determine the appropriate Jira issue type: **Bug**, **Story**, **Task**, or **Epic**
+- Identify missing information that would make the issue more useful
+- Consider suggesting a priority level (Highest, High, Medium, Low, Lowest)
+
+### 2. Ask Clarifying Questions
+
+Before creating the issue, ask the user targeted questions based on issue type:
+
+**Bug:**
+- What is the expected behavior vs actual behavior?
+- What are the steps to reproduce?
+- What environment/version is affected?
+- What priority should this have?
+
+**Story:**
+- What problem does this solve or what value does it add?
+- What is the proposed solution or desired behavior?
+- What are the acceptance criteria?
+
+**Task:**
+- What is the scope and definition of done?
+- Are there any dependencies or prerequisites?
+
+**Epic:**
+- What is the high-level goal?
+- What stories or tasks will this encompass?
+
+Skip questions the user has already answered in their initial request. Ask only what's missing.
+
+### 3. Generate Improved Content
+
+Compose a well-structured `--description` using the appropriate template:
+
+**Bug template:**
+```
+h3. Problem
+[Clear description of the bug]
+
+h3. Steps to Reproduce
+# [Step 1]
+# [Step 2]
+
+h3. Expected Behavior
+[What should happen]
+
+h3. Actual Behavior
+[What actually happens]
+
+h3. Environment
+* [Version, OS, browser, etc.]
+```
+
+**Story template:**
+```
+h3. Summary
+[What this story delivers]
+
+h3. Motivation
+[Why this is needed — user problem or business value]
+
+h3. Proposed Solution
+[How it should work]
+
+h3. Acceptance Criteria
+* [Criterion 1]
+* [Criterion 2]
+```
+
+**Task template:**
+```
+h3. Description
+[What needs to be done]
+
+h3. Scope
+* [Item 1]
+* [Item 2]
+
+h3. Acceptance Criteria
+* [Criterion 1]
+* [Criterion 2]
+```
+
+### 4. Suggest Labels and Priority
+
+Analyze the issue context and suggest:
+- **Labels** based on area and scope (e.g., `frontend`, `backend`, `api`, `security`, `performance`)
+- **Priority** based on severity and impact (e.g., High for security bugs, Medium for new features)
+
+### 5. Present for Approval
+
+Show the user the complete issue (summary, type, description, labels, priority) and ask for confirmation before creating. Let them make adjustments.
+
+### 6. Create the Issue
+
+Once approved, create the issue using `shiba jira issue-create` with appropriate flags (`--project`, `--type`, `--summary`, `--description`, `--priority`, `--labels`). The CLI will automatically append the Shiba Agent signature if enabled in preferences.
+
 ## Error Handling
 
 Common error codes and what to do:

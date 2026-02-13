@@ -138,6 +138,105 @@ Shows whether workflow automation is enabled and current transition settings.
 
 **Note:** If the Jira key can be extracted from the PR title, always call the appropriate workflow command after successful PR operations.
 
+## Issue Creation Workflow
+
+When the user asks you to create a GitHub issue, do NOT just pass their input through. Follow this workflow:
+
+### 1. Analyze the Request
+
+- Evaluate the user's title for clarity, specificity, and actionability
+- Determine the issue type from context: **bug**, **feature**, or **task**
+- Identify missing information that would make the issue more useful
+
+### 2. Ask Clarifying Questions
+
+Before creating the issue, ask the user targeted questions based on issue type:
+
+**Bug:**
+- What is the expected behavior vs actual behavior?
+- What are the steps to reproduce?
+- What environment/version is affected?
+
+**Feature:**
+- What problem does this solve or what value does it add?
+- What is the proposed solution or desired behavior?
+- What are the acceptance criteria?
+
+**Task:**
+- What is the scope and definition of done?
+- Are there any dependencies or prerequisites?
+
+Skip questions the user has already answered in their initial request. Ask only what's missing.
+
+### 3. Generate Improved Content
+
+Compose a well-structured issue using the appropriate template:
+
+**Bug template:**
+```
+## Problem
+[Clear description of the bug]
+
+## Steps to Reproduce
+1. [Step 1]
+2. [Step 2]
+
+## Expected Behavior
+[What should happen]
+
+## Actual Behavior
+[What actually happens]
+
+## Environment
+- [Version, OS, browser, etc.]
+```
+
+**Feature template:**
+```
+## Summary
+[What this feature does]
+
+## Motivation
+[Why this feature is needed]
+
+## Proposed Solution
+[How it should work]
+
+## Acceptance Criteria
+- [ ] [Criterion 1]
+- [ ] [Criterion 2]
+```
+
+**Task template:**
+```
+## Description
+[What needs to be done]
+
+## Scope
+- [Item 1]
+- [Item 2]
+
+## Acceptance Criteria
+- [ ] [Criterion 1]
+- [ ] [Criterion 2]
+```
+
+### 4. Suggest Labels
+
+Analyze the issue context and suggest appropriate labels. Go beyond simple keyword matching — consider:
+- Issue type: `bug`, `enhancement`, `documentation`, `test`, `refactor`
+- Area: `frontend`, `backend`, `api`, `infrastructure`, `ci/cd`
+- Priority: `priority-high`, `priority-medium`, `priority-low`
+- Scope: `breaking-change`, `security`, `performance`
+
+### 5. Present for Approval
+
+Show the user the complete issue (title, body, labels) and ask for confirmation before creating. Let them make adjustments.
+
+### 6. Create the Issue
+
+Once approved, create the issue using `shiba github issue-create`. The CLI will automatically append the Shiba Agent signature if enabled in preferences.
+
 ## Error Handling
 
 All errors return JSON to stderr:

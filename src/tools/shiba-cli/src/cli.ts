@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { createInterface } from "readline";
 import { stdin, stdout } from "process";
 import { handleCliError } from "@shiba-agent/shared";
+import { appendIssueSignature } from "./config/resolve.js";
 
 function promptInput(question: string): Promise<string> {
   const rl = createInterface({ input: stdin, output: stdout });
@@ -536,7 +537,7 @@ gitlab
 
       await glIssueCreate({
         title,
-        description: description ?? "",  // Always pass description
+        description: appendIssueSignature(description ?? ""),
         assignees: opts.assignees,
         labels: labels || undefined,
         project: opts.project,
@@ -751,7 +752,7 @@ github
 
       await ghIssueCreate({
         title,
-        body: body ?? "",  // Always pass body to satisfy gh CLI
+        body: appendIssueSignature(body ?? ""),
         assignees: opts.assignees,
         labels: labels || undefined,
         repo: opts.repo,

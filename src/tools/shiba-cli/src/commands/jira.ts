@@ -18,7 +18,7 @@ import {
   syncJiraData,
   type JiraData,
 } from "../issues/index.js";
-import { appendCommentSignature } from "../config/resolve.js";
+import { appendCommentSignature, appendIssueSignature } from "../config/resolve.js";
 
 // Helper to get configured client
 function getClient() {
@@ -183,14 +183,16 @@ export async function issueCreate(opts: IssueCreateOpts): Promise<void> {
     },
   };
 
-  if (opts.description) {
+  const description = opts.description ? appendIssueSignature(opts.description) : undefined;
+
+  if (description) {
     data.fields.description = {
       type: "doc",
       version: 1,
       content: [
         {
           type: "paragraph",
-          content: [{ type: "text", text: opts.description }],
+          content: [{ type: "text", text: description }],
         },
       ],
     };
