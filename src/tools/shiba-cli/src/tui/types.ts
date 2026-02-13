@@ -46,6 +46,15 @@ export interface JiraLinkedIssue {
   status: string;
 }
 
+// Group of issues from a single tracker
+export interface TrackerGroup {
+  tracker: IssueTracker;
+  label: string;        // "Jira", "GitHub", "GitLab"
+  issues: IssueBasic[];
+  loading: boolean;
+  error: string | null;
+}
+
 // Cached task data with fetch timestamp
 export interface CachedTask extends JiraIssueFull {
   fetchedAt: string;

@@ -1,32 +1,28 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMemo } from "react";
 import { loadGlobalConfig, isCliAvailable } from "@shiba-agent/shared";
-import type { IssueBasic, IssueTracker } from "../types.js";
+import type { IssueBasic, IssueTracker, TrackerGroup } from "../types.js";
 import { useJiraIssues } from "./useJiraIssues.js";
 import { useGitHubIssues } from "./useGitHubIssues.js";
 import { useGitLabIssues } from "./useGitLabIssues.js";
 
 interface UseIssuesResult {
-  issues: IssueBasic[];
-  loading: boolean;
-  error: string | null;
+  groups: TrackerGroup[];
   refresh: () => void;
-  source: IssueTracker;
 }
 
+const TRACKER_LABELS: Record<IssueTracker, string> = {
+  jira: "Jira",
+  github: "GitHub",
+  gitlab: "GitLab",
+};
+
 /**
- * Detect which issue tracker to use based on config and availability.
- * Priority: configured preference > Jira (if configured) > GitHub (if available) > GitLab (if available)
+ * Detect all available issue trackers based on config and CLI availability.
  */
-function detectIssueTracker(): IssueTracker {
+function detectAvailableTrackers(): IssueTracker[] {
   const config = loadGlobalConfig();
-  const preference = config.preferences?.issueTracker;
+  const trackers: IssueTracker[] = [];
 
-  // If explicitly configured, use that
-  if (preference) {
-    return preference;
-  }
-
-  // Check if Jira is configured
   const hasJira = !!(
     (process.env.JIRA_HOST || config.jira?.host) &&
     (process.env.JIRA_EMAIL || config.jira?.email) &&
@@ -34,61 +30,86 @@ function detectIssueTracker(): IssueTracker {
   );
 
   if (hasJira) {
-    return "jira";
+    trackers.push("jira");
   }
 
-  // Fallback to available CLIs
   if (isCliAvailable("gh")) {
-    return "github";
+    trackers.push("github");
   }
 
   if (isCliAvailable("glab")) {
-    return "gitlab";
+    trackers.push("gitlab");
   }
 
-  // Default to jira (will show config error)
-  return "jira";
+  return trackers;
 }
 
 /**
- * Unified hook that uses the appropriate issue tracker based on configuration.
+ * Unified hook that fetches issues from ALL available trackers and groups them.
  */
 export function useIssues(): UseIssuesResult {
-  const [source] = useState<IssueTracker>(() => detectIssueTracker());
+  const availableTrackers = useMemo(() => detectAvailableTrackers(), []);
 
   const jiraResult = useJiraIssues();
   const githubResult = useGitHubIssues();
   const gitlabResult = useGitLabIssues();
 
-  // Select the right result based on source
-  const activeResult = source === "jira" ? jiraResult :
-                       source === "github" ? githubResult :
-                       gitlabResult;
+  const groups = useMemo(() => {
+    const result: TrackerGroup[] = [];
 
-  // Convert issues to IssueBasic format based on source
-  let issues: IssueBasic[];
-  if (source === "jira") {
-    issues = jiraResult.issues.map(issue => ({
-      key: issue.key,
-      id: issue.id,
-      summary: issue.summary,
-      status: issue.status,
-      priority: issue.priority,
-      issueType: issue.issueType,
-      updated: issue.updated,
-      source: "jira" as const,
-    }));
-  } else if (source === "github") {
-    issues = githubResult.issues;
-  } else {
-    issues = gitlabResult.issues;
-  }
+    for (const tracker of availableTrackers) {
+      if (tracker === "jira") {
+        const issues: IssueBasic[] = jiraResult.issues.map((issue) => ({
+          key: issue.key,
+          id: issue.id,
+          summary: issue.summary,
+          status: issue.status,
+          priority: issue.priority,
+          issueType: issue.issueType,
+          updated: issue.updated,
+          source: "jira" as const,
+        }));
+        result.push({
+          tracker,
+          label: TRACKER_LABELS[tracker],
+          issues,
+          loading: jiraResult.loading,
+          error: jiraResult.error,
+        });
+      } else if (tracker === "github") {
+        result.push({
+          tracker,
+          label: TRACKER_LABELS[tracker],
+          issues: githubResult.issues,
+          loading: githubResult.loading,
+          error: githubResult.error,
+        });
+      } else if (tracker === "gitlab") {
+        result.push({
+          tracker,
+          label: TRACKER_LABELS[tracker],
+          issues: gitlabResult.issues,
+          loading: gitlabResult.loading,
+          error: gitlabResult.error,
+        });
+      }
+    }
 
-  return {
-    issues,
-    loading: activeResult.loading,
-    error: activeResult.error,
-    refresh: activeResult.refresh,
-    source,
+    return result;
+  }, [
+    availableTrackers,
+    jiraResult.issues, jiraResult.loading, jiraResult.error,
+    githubResult.issues, githubResult.loading, githubResult.error,
+    gitlabResult.issues, gitlabResult.loading, gitlabResult.error,
+  ]);
+
+  const refresh = () => {
+    for (const tracker of availableTrackers) {
+      if (tracker === "jira") jiraResult.refresh();
+      else if (tracker === "github") githubResult.refresh();
+      else if (tracker === "gitlab") gitlabResult.refresh();
+    }
   };
+
+  return { groups, refresh };
 }
