@@ -163,7 +163,7 @@ program
 
 program
   .command("tui")
-  .description("Launch interactive TUI for navigating Jira issues")
+  .description("Launch interactive TUI for navigating issues")
   .action(async () => {
     try {
       await tui();
