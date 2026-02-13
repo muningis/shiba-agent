@@ -172,6 +172,7 @@ All output is JSON to stdout.
 | `shiba setup` | Interactive setup wizard (auth + preferences) | `--reset`, `--defaults`, `--skip-auth` |
 | `shiba init` | Initialize project config | `--force` |
 | `shiba tui` | Interactive task navigator | — |
+| `shiba ask <query>` | Get help on shiba usage | — |
 | `shiba branch name` | Generate branch name (no git operation) | `--key`, `--description`, `--type` |
 | `shiba branch create` | Create git branch + Jira transition | `--key`, `--description`, `--type`, `--no-transition` |
 | `shiba commit-msg` | Generate commit message | `--type`, `--description`, `--key`, `--scope` |
@@ -319,3 +320,21 @@ Three agents are defined in `src/agents/`:
 - **gitlab-agent** — GitLab specialist (MRs, pipelines, code review)
 - **jira-agent** — Jira specialist (issues, transitions, JQL)
 - **project-manager** — Orchestrator that delegates to the above two
+
+## Docker Sandbox for Claude Code
+
+This repository includes `.claude/settings.json` to enforce Docker sandbox mode. To enable sandbox in projects using shiba-agent, create `.claude/settings.json`:
+
+```json
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  }
+}
+```
+
+| Setting | Description |
+|---------|-------------|
+| `sandbox.enabled` | Forces Docker sandbox mode for all bash commands |
+| `autoAllowBashIfSandboxed` | Auto-approves bash commands since they run in isolation |

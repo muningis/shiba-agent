@@ -97,6 +97,7 @@ shiba setup --defaults  # Apply defaults without prompts
 shiba init              # Create .shiba/config.json with GitLab project info
 shiba tui               # Interactive Jira issue navigator
 shiba config show       # Show effective configuration
+shiba ask "how to setup" # Get help on shiba usage
 ```
 
 ### OpenAPI
@@ -197,6 +198,24 @@ The setup script automatically links agents to `~/.claude/agents/`:
 - **project-manager** — Orchestrates cross-system workflows
 
 **Security:** `shiba env use` requires interactive confirmation that Claude Code cannot provide, preventing accidental data leakage between environments.
+
+## Docker Sandbox for Claude Code
+
+This repository includes `.claude/settings.json` to enforce Docker sandbox mode for Claude Code sessions. This ensures all bash commands run in an isolated container.
+
+To enable sandbox mode in your own projects that use shiba-agent, create `.claude/settings.json`:
+
+```json
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  }
+}
+```
+
+- `sandbox.enabled: true` — Forces Docker sandbox mode
+- `autoAllowBashIfSandboxed: true` — Auto-approves bash commands since they run safely in isolation
 
 ## License
 
