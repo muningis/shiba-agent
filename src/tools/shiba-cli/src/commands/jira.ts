@@ -5,10 +5,9 @@ import {
   createDefaultIssue,
   syncJiraData,
   type JiraData,
-  type JiraComment as IssueJiraComment,
-  type JiraLinkedIssue,
 } from "../issues/index.js";
 import { appendCommentSignature } from "../config/resolve.js";
+import { parseJiraCliRawOutput } from "../utils/jira-parser.js";
 
 const JIRA_CLI = "jira";
 const JIRA_INSTALL_HINT = "brew install ankitpokhrel/jira-cli/jira-cli";
@@ -46,99 +45,22 @@ export async function issueGet(opts: IssueGetOpts): Promise<void> {
   successResponse({ key: opts.key, ...jiraData });
 }
 
-// Parse jira-cli raw output into our JiraData format
+// Convert jira-cli raw output into our JiraData format using shared parser
 function parseJiraCliOutput(key: string, raw: string): JiraData {
-  // jira-cli --raw outputs in a structured text format
-  // Parse the main fields from the output
-  const lines = raw.split("\n");
-
-  let summary = "";
-  let status = "Unknown";
-  let issueType = "Unknown";
-  let priority = "None";
-  let assigneeName = "";
-  let reporterName = "";
-  let created = "";
-  let updated = "";
-  const comments: IssueJiraComment[] = [];
-  const linkedIssues: JiraLinkedIssue[] = [];
-
-  let inDescription = false;
-  let inComments = false;
-  const descLines: string[] = [];
-
-  for (const line of lines) {
-    // Match key-value pairs
-    if (line.startsWith("Summary:")) {
-      summary = line.slice(8).trim();
-      inDescription = false;
-      inComments = false;
-    } else if (line.startsWith("Status:")) {
-      status = line.slice(7).trim();
-      inDescription = false;
-      inComments = false;
-    } else if (line.startsWith("Type:")) {
-      issueType = line.slice(5).trim();
-      inDescription = false;
-      inComments = false;
-    } else if (line.startsWith("Priority:")) {
-      priority = line.slice(9).trim();
-      inDescription = false;
-      inComments = false;
-    } else if (line.startsWith("Assignee:")) {
-      assigneeName = line.slice(9).trim();
-      inDescription = false;
-      inComments = false;
-    } else if (line.startsWith("Reporter:")) {
-      reporterName = line.slice(9).trim();
-      inDescription = false;
-      inComments = false;
-    } else if (line.startsWith("Created:")) {
-      created = line.slice(8).trim();
-      inDescription = false;
-      inComments = false;
-    } else if (line.startsWith("Updated:")) {
-      updated = line.slice(8).trim();
-      inDescription = false;
-      inComments = false;
-    } else if (line.startsWith("Description:")) {
-      inDescription = true;
-      inComments = false;
-      const desc = line.slice(12).trim();
-      if (desc) descLines.push(desc);
-    } else if (line.startsWith("Comments:") || line.startsWith("# Comments")) {
-      inDescription = false;
-      inComments = true;
-    } else if (inDescription && line.trim()) {
-      descLines.push(line);
-    } else if (inComments) {
-      // Parse comments - format varies by jira-cli version
-      const commentMatch = line.match(/^\s*[-*]?\s*(.+?)\s*\((.+?)\):\s*(.+)$/);
-      if (commentMatch) {
-        comments.push({
-          author: commentMatch[1].trim(),
-          created: commentMatch[2].trim(),
-          body: commentMatch[3].trim(),
-        });
-      }
-    }
-  }
-
-  const parsedDescription = descLines.join("\n").trim() || null;
-
+  const parsed = parseJiraCliRawOutput(key, raw);
   return {
-    id: key,
-    summary,
-    status,
-    issueType,
-    priority,
-    assignee: assigneeName ? { name: assigneeName, email: "" } : null,
-    reporter: reporterName ? { name: reporterName } : null,
-    created,
-    updated,
-    description: parsedDescription,
-    comments,
-    linkedIssues,
+    id: parsed.id,
+    summary: parsed.summary,
+    status: parsed.status,
+    issueType: parsed.issueType,
+    priority: parsed.priority,
+    assignee: parsed.assigneeName ? { name: parsed.assigneeName, email: "" } : null,
+    reporter: parsed.reporterName ? { name: parsed.reporterName } : null,
+    created: parsed.created,
+    updated: parsed.updated,
+    description: parsed.description,
+    comments: parsed.comments,
+    linkedIssues: parsed.linkedIssues,
   };
 }
 

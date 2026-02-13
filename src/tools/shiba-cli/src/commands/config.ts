@@ -78,6 +78,9 @@ function applyConfigValue(
       if (value !== "conventional" && value !== "custom") {
         errorResponse("INVALID_VALUE", "commit-style must be 'conventional' or 'custom'");
       }
+      if (value === "custom" && !template) {
+        errorResponse("MISSING_TEMPLATE", "Custom commit style requires --template (e.g., --template '[{key}] {description}')");
+      }
       preferences.commitMessage = {
         style: value as "conventional" | "custom",
         ...(template && { template }),

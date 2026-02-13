@@ -2,6 +2,37 @@ import { loadGlobalConfig, type ShibaPreferences, getDefaultPreferences } from "
 import { loadProjectConfig } from "./project.js";
 
 /**
+ * Recursively deep merge objects with priority cascade.
+ * Later sources override earlier ones. Only plain objects are recursed into;
+ * primitives, arrays, and null are replaced wholesale.
+ */
+function deepMerge<T extends Record<string, unknown>>(...sources: (T | Partial<T> | undefined)[]): T {
+  const result = {} as Record<string, unknown>;
+
+  for (const source of sources) {
+    if (!source) continue;
+    for (const [key, value] of Object.entries(source)) {
+      if (value === undefined) continue;
+      const existing = result[key];
+      if (
+        value !== null &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        existing !== null &&
+        typeof existing === "object" &&
+        !Array.isArray(existing)
+      ) {
+        result[key] = deepMerge(existing as Record<string, unknown>, value as Record<string, unknown>);
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+
+  return result as T;
+}
+
+/**
  * Get effective preferences by merging:
  * 1. Built-in defaults (lowest priority)
  * 2. Global config (~/.shiba-agent/config/config.json)
@@ -12,50 +43,11 @@ export function getEffectivePreferences(cwd: string = process.cwd()): Required<S
   const globalConfig = loadGlobalConfig();
   const projectConfig = loadProjectConfig(cwd);
 
-  // Deep merge preferences
-  return {
-    defaultJql: projectConfig?.preferences?.defaultJql ?? globalConfig.preferences?.defaultJql ?? defaults.defaultJql,
-    branchNaming: {
-      pattern:
-        projectConfig?.preferences?.branchNaming?.pattern ??
-        globalConfig.preferences?.branchNaming?.pattern ??
-        defaults.branchNaming.pattern,
-    },
-    commitMessage: {
-      style:
-        projectConfig?.preferences?.commitMessage?.style ??
-        globalConfig.preferences?.commitMessage?.style ??
-        defaults.commitMessage.style,
-      template:
-        projectConfig?.preferences?.commitMessage?.template ?? globalConfig.preferences?.commitMessage?.template,
-    },
-    signatures: {
-      shibaSignature:
-        projectConfig?.preferences?.signatures?.shibaSignature ??
-        globalConfig.preferences?.signatures?.shibaSignature ??
-        defaults.signatures.shibaSignature,
-    },
-    workflow: {
-      enabled:
-        projectConfig?.preferences?.workflow?.enabled ??
-        globalConfig.preferences?.workflow?.enabled ??
-        defaults.workflow.enabled,
-      transitions: {
-        onBranchCreate:
-          projectConfig?.preferences?.workflow?.transitions?.onBranchCreate ??
-          globalConfig.preferences?.workflow?.transitions?.onBranchCreate ??
-          defaults.workflow.transitions?.onBranchCreate ?? "In Progress",
-        onMrCreate:
-          projectConfig?.preferences?.workflow?.transitions?.onMrCreate ??
-          globalConfig.preferences?.workflow?.transitions?.onMrCreate ??
-          defaults.workflow.transitions?.onMrCreate ?? "Peer Review",
-        onMerge:
-          projectConfig?.preferences?.workflow?.transitions?.onMerge ??
-          globalConfig.preferences?.workflow?.transitions?.onMerge ??
-          defaults.workflow.transitions?.onMerge ?? "Ready for QA",
-      },
-    },
-  };
+  return deepMerge<Required<ShibaPreferences>>(
+    defaults,
+    globalConfig.preferences as Partial<Required<ShibaPreferences>> | undefined,
+    projectConfig?.preferences as Partial<Required<ShibaPreferences>> | undefined,
+  );
 }
 
 /**

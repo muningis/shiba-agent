@@ -96,11 +96,12 @@ export async function prList(opts: PrListOpts): Promise<void> {
       url: pr.url as string,
       createdAt: pr.createdAt as string,
       updatedAt: pr.updatedAt as string,
-      draft: pr.isDraft as boolean ?? false,
+      draft: Boolean(pr.isDraft),
     }));
     successResponse(summaries);
-  } catch {
-    successResponse([]);
+  } catch (err) {
+    process.stderr.write(`[shiba] Warning: Failed to parse gh pr list output: ${err}\n`);
+    errorResponse("PARSE_FAILED", "Failed to parse pull request list from gh");
   }
 }
 
@@ -289,8 +290,9 @@ export async function ghIssueList(opts: GhIssueListOpts): Promise<void> {
       updatedAt: issue.updatedAt as string,
     }));
     successResponse(summaries);
-  } catch {
-    successResponse([]);
+  } catch (err) {
+    process.stderr.write(`[shiba] Warning: Failed to parse gh issue list output: ${err}\n`);
+    errorResponse("PARSE_FAILED", "Failed to parse issue list from gh");
   }
 }
 
