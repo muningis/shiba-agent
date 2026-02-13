@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Git worktree support** - New `shiba worktree create`, `list`, `remove` commands for working on multiple issues simultaneously using git worktrees.
 - **OpenAPI agent** - New `oapi-agent` for endpoint discovery, schema analysis, and API integration guidance using cached OpenAPI specs.
 - **GitLab issue commands** - `shiba gitlab issue-get`, `issue-create`, `issue-list`, `issue-comment` for GitLab Issues support.
 - **Issue tracker fallback** - When Jira is not configured, TUI and setup wizard suggest using GitHub or GitLab Issues instead.

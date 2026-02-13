@@ -188,6 +188,9 @@ All output is JSON to stdout.
 | `shiba ask <query>` | Get help on shiba usage | — |
 | `shiba branch name` | Generate branch name (no git operation) | `--key`, `--description`, `--type` |
 | `shiba branch create` | Create git branch + Jira transition | `--key`, `--description`, `--type`, `--no-transition` |
+| `shiba worktree create` | Create worktree + branch for an issue | `--key`, `--description`, `--path` |
+| `shiba worktree list` | List all git worktrees | — |
+| `shiba worktree remove` | Remove a git worktree | `--path`, `--force` |
 | `shiba commit-msg` | Generate commit message | `--type`, `--description`, `--key`, `--scope` |
 | `shiba config show` | Show configuration | `--global`, `--project` |
 | `shiba config set` | Set configuration value | `--key`, `--value`, `--global` |
@@ -288,6 +291,31 @@ Local issue tracking for agent workflow. Issue files are stored in `~/.shiba-age
 | `shiba issue add-requirement` | Add requirement | `--key`, `--title`, `--description`, `--type`, `--priority` |
 
 **Note:** `shiba jira issue-get` automatically creates/updates the local issue tracking file. Use `--no-track` to disable this behavior.
+
+### Worktree Commands (`shiba worktree`)
+
+Work on multiple issues simultaneously using git worktrees.
+
+| Command | Purpose | Key Flags |
+|---------|---------|-----------|
+| `shiba worktree create` | Create worktree + branch for issue | `--key`, `--description`, `--type`, `--path` |
+| `shiba worktree list` | List all worktrees | — |
+| `shiba worktree remove` | Remove a worktree | `--path`, `--force` |
+
+**Worktree workflow:**
+```bash
+# Create worktree for an issue (creates branch + working directory)
+shiba worktree create --key PROJ-123 --description "add-login"
+# Output: { path: "../my-app-worktrees/PROJ-123-add-login", hint: "cd ..." }
+
+# List all active worktrees
+shiba worktree list
+
+# Remove worktree when done (branch remains)
+shiba worktree remove --path ../my-app-worktrees/PROJ-123-add-login
+```
+
+**Default location:** Worktrees are created at `../<repo>-worktrees/<branch>` to keep them organized outside the main repository.
 
 ### Workflow Commands (`shiba workflow`)
 

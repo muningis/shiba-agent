@@ -116,6 +116,11 @@ import {
 import { setup } from "./commands/setup.js";
 import { ask } from "./commands/ask.js";
 import { update } from "./commands/update.js";
+import {
+  worktreeCreate,
+  worktreeList,
+  worktreeRemove,
+} from "./commands/worktree.js";
 
 const program = new Command()
   .name("shiba")
@@ -1319,6 +1324,60 @@ workflow
   .action(async () => {
     try {
       await workflowStatus();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+// Worktree commands
+const worktree = program
+  .command("worktree")
+  .description("Git worktree management for working on multiple issues");
+
+worktree
+  .command("create")
+  .description("Create a worktree with a new branch for an issue")
+  .requiredOption("--key <key>", "Issue key (e.g. PROJ-123)")
+  .option("--description <text>", "Branch description")
+  .option("--type <type>", "Branch type (e.g. feat, fix)")
+  .option("--path <path>", "Custom worktree path (default: ../<repo>-worktrees/<branch>)")
+  .option("--no-transition", "Skip Jira transition")
+  .action(async (opts) => {
+    try {
+      await worktreeCreate({
+        key: opts.key,
+        description: opts.description,
+        type: opts.type,
+        path: opts.path,
+        noTransition: !opts.transition,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+worktree
+  .command("list")
+  .description("List all git worktrees")
+  .action(async () => {
+    try {
+      await worktreeList();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+worktree
+  .command("remove")
+  .description("Remove a git worktree")
+  .requiredOption("--path <path>", "Worktree path to remove")
+  .option("--force", "Force removal even with uncommitted changes", false)
+  .action(async (opts) => {
+    try {
+      await worktreeRemove({
+        path: opts.path,
+        force: opts.force,
+      });
     } catch (err) {
       handleCliError(err);
     }
