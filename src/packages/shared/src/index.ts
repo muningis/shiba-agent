@@ -33,6 +33,8 @@ export {
   ensureGlabDir,
   ensureJiraDir,
   ensureTicketsDir,
+  getCustomAgentsDir,
+  ensureCustomAgentsDir,
   getCurrentEnvironment,
   isDataInitialized,
 } from "./config/global.js";

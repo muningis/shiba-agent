@@ -21,6 +21,14 @@ export interface SetupOpts {
   skipAuth?: boolean;
 }
 
+export interface SetupResult {
+  configured: boolean;
+  environment: string | null;
+  jira?: { host: string; email: string };
+  preferences: ShibaPreferences;
+  defaults?: boolean;
+}
+
 interface CliInfo {
   name: string;
   command: string;
@@ -92,7 +100,7 @@ async function runCliAuth(cli: CliInfo): Promise<boolean> {
   }
 }
 
-export async function setup(opts: SetupOpts): Promise<void> {
+export async function runInteractiveSetup(opts: SetupOpts): Promise<SetupResult> {
   const hasExistingEnv = isDataInitialized() && getCurrentEnvironment();
 
   print("");
@@ -108,8 +116,11 @@ export async function setup(opts: SetupOpts): Promise<void> {
     );
     rl.close();
     if (answer.toLowerCase() !== "yes") {
-      errorResponse("CANCELLED", "Setup cancelled.");
-      return;
+      return {
+        configured: false,
+        environment: getCurrentEnvironment(),
+        preferences: loadGlobalConfig().preferences || {},
+      };
     }
   }
 
@@ -138,12 +149,12 @@ export async function setup(opts: SetupOpts): Promise<void> {
     config.preferences = defaults;
     saveGlobalConfig(config);
 
-    successResponse({
+    return {
       configured: true,
       defaults: true,
+      environment: getCurrentEnvironment(),
       preferences: defaults,
-    });
-    return;
+    };
   }
 
   const rl = createInterface({ input: stdin, output: stdout });
@@ -436,10 +447,19 @@ export async function setup(opts: SetupOpts): Promise<void> {
   print(`  commitMessage.style: ${newPrefs.commitMessage?.style}${newPrefs.commitMessage?.template ? ` (${newPrefs.commitMessage.template})` : ""}`);
   print(`  signatures.shibaSignature: ${newPrefs.signatures?.shibaSignature}`);
 
-  successResponse({
+  return {
     configured: true,
     environment: getCurrentEnvironment(),
-    jira: config.jira ? { host: config.jira.host, email: config.jira.email } : undefined,
+    jira: config.jira?.host && config.jira?.email ? { host: config.jira.host, email: config.jira.email } : undefined,
     preferences: newPrefs,
-  });
+  };
+}
+
+export async function setup(opts: SetupOpts): Promise<void> {
+  const result = await runInteractiveSetup(opts);
+  if (!result.configured) {
+    errorResponse("CANCELLED", "Setup cancelled.");
+    return;
+  }
+  successResponse(result);
 }

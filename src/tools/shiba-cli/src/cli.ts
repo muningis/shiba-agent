@@ -129,6 +129,16 @@ import {
   worktreePrune,
   worktreeRemove,
 } from "./commands/worktree.js";
+import {
+  teamSetup,
+  teamStatus,
+  teamList,
+  teamShow,
+  teamCreate,
+  teamEdit,
+  teamDelete,
+  teamSync,
+} from "./commands/team.js";
 
 const program = new Command()
   .name("shiba")
@@ -137,11 +147,12 @@ const program = new Command()
 
 program
   .command("init")
-  .description("Initialize project configuration by detecting GitLab repository")
+  .description("Initialize project configuration by detecting repository")
   .option("--force", "Overwrite existing .shiba/config.json", false)
+  .option("--skip-claude-md", "Skip CLAUDE.md generation", false)
   .action(async (opts) => {
     try {
-      await init(opts);
+      await init({ force: opts.force, skipClaudeMd: opts.skipClaudeMd });
     } catch (err) {
       handleCliError(err);
     }
@@ -1508,6 +1519,136 @@ notes
   .action(async () => {
     try {
       await notesListTickets();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+// Team commands (Claude Code agent teams)
+const team = program
+  .command("team")
+  .description("Claude Code agent teams setup and agent management");
+
+team
+  .command("setup")
+  .description("Enable agent teams in Claude Code settings")
+  .option("--global", "Write to ~/.claude/settings.json (default)")
+  .option("--project", "Write to .claude/settings.json in CWD")
+  .option("--teammate-mode <mode>", "Set teammate mode: in-process, tmux, auto", "auto")
+  .option("--disable", "Remove agent teams config", false)
+  .action(async (opts) => {
+    try {
+      await teamSetup({
+        global: opts.global,
+        project: opts.project,
+        teammateMode: opts.teammateMode,
+        disable: opts.disable,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+team
+  .command("status")
+  .description("Show current teams config and agent inventory")
+  .action(async () => {
+    try {
+      await teamStatus();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+team
+  .command("list")
+  .description("List all agents (built-in and custom)")
+  .action(async () => {
+    try {
+      await teamList();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+team
+  .command("show")
+  .description("Show full agent details")
+  .requiredOption("--name <name>", "Agent name")
+  .action(async (opts) => {
+    try {
+      await teamShow({ name: opts.name });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+team
+  .command("create")
+  .description("Create a custom agent definition")
+  .requiredOption("--name <name>", "Agent name")
+  .requiredOption("--description <desc>", "Agent description")
+  .option("--model <model>", "Model: sonnet, opus, haiku", "sonnet")
+  .option("--tools <tools>", "Comma-separated tool list", "Bash, Read, Grep, Glob")
+  .option("--max-turns <n>", "Max turns", "15")
+  .option("--instructions <file>", "Read markdown instructions from file")
+  .action(async (opts) => {
+    try {
+      await teamCreate({
+        name: opts.name,
+        description: opts.description,
+        model: opts.model,
+        tools: opts.tools,
+        maxTurns: opts.maxTurns,
+        instructions: opts.instructions,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+team
+  .command("edit")
+  .description("Edit a custom agent's metadata")
+  .requiredOption("--name <name>", "Agent to edit")
+  .option("--description <desc>", "New description")
+  .option("--model <model>", "New model: sonnet, opus, haiku")
+  .option("--tools <tools>", "New tools (comma-separated)")
+  .option("--max-turns <n>", "New max turns")
+  .option("--instructions <file>", "Replace instructions from file")
+  .action(async (opts) => {
+    try {
+      await teamEdit({
+        name: opts.name,
+        description: opts.description,
+        model: opts.model,
+        tools: opts.tools,
+        maxTurns: opts.maxTurns,
+        instructions: opts.instructions,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+team
+  .command("delete")
+  .description("Delete a custom agent")
+  .requiredOption("--name <name>", "Agent to delete")
+  .action(async (opts) => {
+    try {
+      await teamDelete({ name: opts.name });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+team
+  .command("sync")
+  .description("Re-symlink all agents to ~/.claude/agents/")
+  .action(async () => {
+    try {
+      await teamSync();
     } catch (err) {
       handleCliError(err);
     }

@@ -183,7 +183,7 @@ All output is JSON to stdout.
 | Command | Purpose | Key Flags |
 |---------|---------|-----------|
 | `shiba setup` | Interactive setup wizard (auth + preferences) | `--reset`, `--defaults`, `--skip-auth` |
-| `shiba init` | Initialize project config | `--force` |
+| `shiba init` | Initialize project config + generate CLAUDE.md | `--force`, `--skip-claude-md` |
 | `shiba tui` | Interactive task navigator | — |
 | `shiba ask <query>` | Get help on shiba usage | — |
 | `shiba branch name` | Generate branch name (no git operation) | `--key`, `--description`, `--type` |
@@ -197,10 +197,11 @@ All output is JSON to stdout.
 
 **shiba setup** guides the user through CLI authentication and preference configuration. Use `--reset` to reconfigure an existing environment, `--defaults` to skip prompts and apply defaults, or `--skip-auth` to skip CLI authentication.
 
-**shiba init** detects the GitLab project from git remote and creates `.shiba/config.json`:
+**shiba init** detects the repository from git remote, creates `.shiba/config.json`, and generates a project-level `CLAUDE.md` with shiba agent instructions:
 ```json
 { "repository": "group/project-name" }
 ```
+The generated `CLAUDE.md` section is wrapped in `<!-- shiba-agent:start -->` / `<!-- shiba-agent:end -->` markers. Running `shiba init` again updates only the managed section, preserving any custom content. Use `--skip-claude-md` to skip `CLAUDE.md` generation.
 
 **shiba tui** launches an interactive terminal UI to navigate your Jira issues.
 
