@@ -181,7 +181,11 @@ export function App() {
         )}
       </Box>
 
-      <StatusBar view={view} section={section} />
+      <StatusBar
+        view={view}
+        section={section}
+        refreshing={section === "issues" && groups.some((g) => g.loading)}
+      />
     </Box>
   );
 }

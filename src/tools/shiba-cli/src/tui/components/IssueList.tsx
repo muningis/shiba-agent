@@ -37,11 +37,12 @@ export function IssueList({ groups, onSelect, onAction }: IssueListProps) {
         count: group.issues.length,
       });
 
-      if (group.loading) {
+      if (group.loading && group.issues.length === 0) {
+        // Initial load — no data yet, show spinner
         rows.push({ kind: "loading", tracker: group.tracker });
-      } else if (group.error) {
+      } else if (group.error && group.issues.length === 0) {
         rows.push({ kind: "error", message: group.error });
-      } else if (group.issues.length === 0) {
+      } else if (!group.loading && group.issues.length === 0) {
         rows.push({ kind: "empty", tracker: group.tracker });
       } else {
         for (const issue of group.issues) {
@@ -99,12 +100,17 @@ export function IssueList({ groups, onSelect, onAction }: IssueListProps) {
       {rows.map((row, idx) => {
         if (row.kind === "header") {
           const color = TRACKER_COLORS[row.tracker];
+          const group = groups.find((g) => g.tracker === row.tracker);
+          const isRefreshing = group?.loading && row.count > 0;
           return (
             <Box key={`h-${row.tracker}`} marginTop={idx > 0 ? 1 : 0}>
               <Text bold color={color}>
                 {row.label}
-                {!groups.find((g) => g.tracker === row.tracker)?.loading && (
+                {!group?.loading && (
                   <Text dimColor> ({row.count})</Text>
+                )}
+                {isRefreshing && (
+                  <Text color="yellow"> <Spinner type="dots" /></Text>
                 )}
               </Text>
             </Box>
