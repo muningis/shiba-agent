@@ -18,6 +18,12 @@ export interface OpenAPISpecConfig {
   auth?: OpenAPIAuthConfig;
 }
 
+export interface JiraConfig {
+  host?: string;
+  email?: string;
+  token?: string;
+}
+
 export interface GlobalConfig {
   figma?: {
     token?: string;
@@ -26,6 +32,7 @@ export interface GlobalConfig {
     specs?: Record<string, OpenAPISpecConfig>;
   };
   preferences?: ShibaPreferences;
+  jira?: JiraConfig;
 }
 
 // Find the shiba-agent repo root by navigating up from this file

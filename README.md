@@ -12,10 +12,9 @@ brew install glab
 
 # GitHub CLI (optional)
 brew install gh
-
-# Jira CLI (optional)
-brew install ankitpokhrel/jira-cli/jira-cli
 ```
+
+**Jira:** Uses direct REST API - no CLI required. Get an API token from https://id.atlassian.com/manage-profile/security/api-tokens
 
 ## Installation
 

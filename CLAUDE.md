@@ -4,7 +4,7 @@ This repository provides the `shiba` CLI tool designed to be invoked by Claude C
 
 ## Prerequisites
 
-Shiba wraps official CLIs. All are optional - install only what you need:
+Shiba wraps official CLIs for GitLab/GitHub. Install only what you need:
 
 ```bash
 # GitLab CLI (optional)
@@ -12,9 +12,6 @@ brew install glab
 
 # GitHub CLI (optional)
 brew install gh
-
-# Jira CLI (optional)
-brew install ankitpokhrel/jira-cli/jira-cli
 ```
 
 Then configure the CLIs you installed:
@@ -25,10 +22,9 @@ glab auth login
 
 # GitHub: authenticate
 gh auth login
-
-# Jira: initialize configuration
-jira init
 ```
+
+**Jira:** Uses direct REST API - no CLI required. Get an API token from https://id.atlassian.com/manage-profile/security/api-tokens
 
 ## Installation
 
@@ -54,13 +50,12 @@ git pull
 ## Environment Isolation
 
 Shiba uses git branches to isolate data between environments (work, home, client projects). Each environment has its own:
-- Config and preferences
+- Config and preferences (including Jira credentials)
 - Cached OpenAPI specs
 - Tracked Jira issues
 - Ticket notes (shared across repos)
 - Figma cache
 - GitLab CLI (`glab`) authentication
-- Jira CLI authentication
 
 ### Quick Start
 
@@ -69,15 +64,15 @@ Shiba uses git branches to isolate data between environments (work, home, client
 shiba env create work
 shiba env use work      # Interactive confirmation required
 
-# Configure CLIs for this environment
+# Configure CLIs and services for this environment
 glab auth login         # Authenticates in work environment
-jira init               # Configures Jira for work
+shiba setup             # Configure Jira API credentials
 
 # Create another environment
 shiba env create home
 shiba env use home
 glab auth login         # Different GitLab account
-jira init               # Different Jira instance
+shiba setup             # Different Jira instance
 ```
 
 ### Environment Commands
@@ -96,7 +91,26 @@ jira init               # Different Jira instance
 
 ## Configuration
 
-Authentication is handled by the underlying CLIs (`glab` and `jira`), isolated per environment.
+### Jira Authentication
+
+Jira uses direct REST API with Basic Auth. Configure via `shiba setup` or environment variables:
+
+```json
+{
+  "jira": {
+    "host": "https://company.atlassian.net",
+    "email": "user@company.com",
+    "token": "YOUR_API_TOKEN"
+  }
+}
+```
+
+Environment variable fallbacks:
+- `JIRA_HOST` - Jira instance URL
+- `JIRA_EMAIL` - Your Jira email
+- `JIRA_API_TOKEN` - API token from https://id.atlassian.com/manage-profile/security/api-tokens
+
+GitLab/GitHub authentication is handled by their respective CLIs (`glab` and `gh`), isolated per environment.
 
 ### Preferences
 
@@ -146,13 +160,12 @@ shiba config set shiba-signature on
 ~/.shiba-agent/
 ├── data/                 # Git repo for environment data
 │   ├── .git/             # Local git (branch = environment)
-│   ├── config.json       # Per-environment preferences
+│   ├── config.json       # Per-environment config (preferences + Jira credentials)
 │   ├── oapi/             # Cached OpenAPI specs
 │   ├── issues/           # Tracked Jira issues
 │   ├── tickets/          # Per-ticket notes (shared across repos)
 │   ├── figma/            # Cached Figma files
-│   ├── glab/             # GitLab CLI config (symlinked from ~/.config/glab-cli)
-│   └── jira/             # Jira CLI config (symlinked from ~/.config/.jira)
+│   └── glab/             # GitLab CLI config (symlinked from ~/.config/glab-cli)
 ├── src/
 │   ├── agents/           # Agent definitions (symlinked to ~/.claude/agents/)
 │   ├── packages/shared/  # Shared library

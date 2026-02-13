@@ -43,12 +43,7 @@ const SUPPORTED_CLIS: CliInfo[] = [
     authCommand: ["auth", "login"],
     checkAuthCommand: ["auth", "status"],
   },
-  {
-    name: "Jira",
-    command: "jira",
-    installHint: "brew install ankitpokhrel/jira-cli/jira-cli",
-    authCommand: ["init"],
-  },
+  // Note: Jira uses direct API now, configured separately
 ];
 
 function prompt(rl: Interface, question: string): Promise<string> {
@@ -195,10 +190,38 @@ export async function setup(opts: SetupOpts): Promise<void> {
     }
   }
 
-  // --- Preferences ---
-  printHeader("Preferences");
+  // --- Jira Configuration ---
+  printHeader("Jira Configuration");
 
   const config = loadGlobalConfig();
+  const currentJira = config.jira || {};
+
+  print("");
+  print("Configure Jira API access (get token at https://id.atlassian.com/manage-profile/security/api-tokens)");
+  print("");
+
+  const jiraHost = await prompt(
+    rl,
+    `Jira host URL [${currentJira.host || "https://company.atlassian.net"}]: `
+  );
+  const jiraEmail = await prompt(
+    rl,
+    `Jira email [${currentJira.email || ""}]: `
+  );
+  const jiraToken = await prompt(
+    rl,
+    `Jira API token [${currentJira.token ? "****" : ""}]: `
+  );
+
+  // Save Jira config
+  config.jira = {
+    host: jiraHost || currentJira.host,
+    email: jiraEmail || currentJira.email,
+    token: jiraToken || currentJira.token,
+  };
+
+  // --- Preferences ---
+  printHeader("Preferences");
   const currentPrefs = config.preferences || {};
   const defaults = getDefaultPreferences();
 
@@ -284,6 +307,11 @@ export async function setup(opts: SetupOpts): Promise<void> {
   print("Configuration saved!");
   print("");
   print("Summary:");
+  if (config.jira?.host) {
+    print(`  jira.host: ${config.jira.host}`);
+    print(`  jira.email: ${config.jira.email}`);
+    print(`  jira.token: ${config.jira.token ? "****" : "(not set)"}`);
+  }
   print(`  workflow.enabled: ${newPrefs.workflow?.enabled}`);
   if (newPrefs.workflow?.enabled) {
     print(`  workflow.transitions.onBranchCreate: ${newPrefs.workflow.transitions?.onBranchCreate}`);
@@ -297,6 +325,7 @@ export async function setup(opts: SetupOpts): Promise<void> {
   successResponse({
     configured: true,
     environment: getCurrentEnvironment(),
+    jira: config.jira ? { host: config.jira.host, email: config.jira.email } : undefined,
     preferences: newPrefs,
   });
 }

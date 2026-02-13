@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { execCli, requireCli } from "@shiba-agent/shared";
+import { createJiraClient, getJiraConfig, loadGlobalConfig } from "@shiba-agent/shared";
 import type { JiraIssueBasic } from "../types.js";
-
-const JIRA_CLI = "jira";
-const JIRA_INSTALL_HINT = "brew install ankitpokhrel/jira-cli/jira-cli";
 
 interface UseJiraIssuesResult {
   issues: JiraIssueBasic[];
@@ -22,37 +19,25 @@ export function useJiraIssues(): UseJiraIssuesResult {
     setError(null);
 
     try {
-      requireCli(JIRA_CLI, JIRA_INSTALL_HINT);
+      const config = getJiraConfig();
+      const client = createJiraClient(config);
 
-      // Use jira-cli to list issues assigned to current user
-      const result = execCli(JIRA_CLI, [
-        "issue",
-        "list",
-        "-a$(jira me)",
-        "-sopen",
-        "--plain",
-        "--columns",
-        "KEY,SUMMARY,STATUS,PRIORITY,TYPE,UPDATED",
-      ]);
+      // Get default JQL from preferences or use sensible default
+      const globalConfig = loadGlobalConfig();
+      const defaultJql = globalConfig.preferences?.defaultJql ||
+        "assignee = currentUser() AND status != Done ORDER BY updated DESC";
 
-      if (result.exitCode !== 0) {
-        throw new Error(result.stderr || "Failed to fetch issues");
-      }
+      const result = await client.searchJql(defaultJql, 50);
 
-      // Parse plain text output
-      const lines = result.stdout.trim().split("\n").filter(Boolean);
-      const fetchedIssues: JiraIssueBasic[] = lines.slice(1).map((line) => {
-        const parts = line.split(/\t|\s{2,}/); // Split by tab or 2+ spaces
-        return {
-          key: parts[0] ?? "",
-          id: parts[0] ?? "",
-          summary: parts[1] ?? "",
-          status: parts[2] ?? "Unknown",
-          priority: parts[3] ?? "None",
-          issueType: parts[4] ?? "Unknown",
-          updated: parts[5] ?? "",
-        };
-      });
+      const fetchedIssues: JiraIssueBasic[] = result.issues.map((issue) => ({
+        key: issue.key,
+        id: issue.id,
+        summary: issue.fields.summary,
+        status: issue.fields.status.name,
+        priority: issue.fields.priority?.name ?? "None",
+        issueType: issue.fields.issuetype.name,
+        updated: issue.fields.updated,
+      }));
 
       setIssues(fetchedIssues);
     } catch (err) {

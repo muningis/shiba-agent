@@ -1,4 +1,16 @@
-import { execCli, requireCli, successResponse, errorResponse } from "@shiba-agent/shared";
+import {
+  successResponse,
+  errorResponse,
+  createJiraClient,
+  getJiraConfig,
+  JiraApiError,
+  parseAdfToText,
+  type JiraIssue,
+  type JiraComment,
+  type JiraIssueLink,
+  type JiraTransition,
+  type CreateIssueData,
+} from "@shiba-agent/shared";
 import {
   loadIssue,
   saveIssue,
@@ -7,10 +19,71 @@ import {
   type JiraData,
 } from "../issues/index.js";
 import { appendCommentSignature } from "../config/resolve.js";
-import { parseJiraCliRawOutput } from "../utils/jira-parser.js";
 
-const JIRA_CLI = "jira";
-const JIRA_INSTALL_HINT = "brew install ankitpokhrel/jira-cli/jira-cli";
+// Helper to get configured client
+function getClient() {
+  try {
+    const config = getJiraConfig();
+    return createJiraClient(config);
+  } catch (e) {
+    if (e instanceof Error) {
+      errorResponse("JIRA_NOT_CONFIGURED", e.message);
+    }
+    throw e;
+  }
+}
+
+// Helper to handle API errors
+function handleApiError(e: unknown, operation: string): never {
+  if (e instanceof JiraApiError) {
+    const detail = e.body && typeof e.body === "object" && "errorMessages" in e.body
+      ? (e.body as { errorMessages?: string[] }).errorMessages?.join(", ")
+      : e.statusText;
+    errorResponse(`${operation}_FAILED`, `${e.status}: ${detail || e.statusText}`);
+  }
+  if (e instanceof Error) {
+    errorResponse(`${operation}_FAILED`, e.message);
+  }
+  throw e;
+}
+
+// Convert API response to our JiraData format
+function toJiraData(issue: JiraIssue): JiraData {
+  const fields = issue.fields;
+
+  return {
+    id: issue.id,
+    summary: fields.summary,
+    status: fields.status.name,
+    issueType: fields.issuetype.name,
+    priority: fields.priority?.name ?? "None",
+    assignee: fields.assignee
+      ? { name: fields.assignee.displayName, email: fields.assignee.emailAddress ?? "" }
+      : null,
+    reporter: fields.reporter
+      ? { name: fields.reporter.displayName }
+      : null,
+    created: fields.created,
+    updated: fields.updated,
+    description: fields.description ? parseAdfToText(fields.description) : null,
+    comments: fields.comment?.comments.map((c) => ({
+      id: c.id,
+      author: c.author.displayName,
+      body: parseAdfToText(c.body) ?? "",
+      created: c.created,
+    })) ?? [],
+    linkedIssues: fields.issuelinks?.map((link) => {
+      const linked = link.inwardIssue || link.outwardIssue;
+      const direction = link.inwardIssue ? link.type.inward : link.type.outward;
+      return {
+        key: linked?.key ?? "",
+        type: direction,
+        summary: linked?.fields.summary ?? "",
+        status: linked?.fields.status.name ?? "",
+      };
+    }) ?? [],
+  };
+}
 
 // Issue Get
 export interface IssueGetOpts {
@@ -19,49 +92,27 @@ export interface IssueGetOpts {
 }
 
 export async function issueGet(opts: IssueGetOpts): Promise<void> {
-  requireCli(JIRA_CLI, JIRA_INSTALL_HINT);
+  const client = getClient();
 
-  // Fetch issue with comments using jira-cli
-  const result = execCli(JIRA_CLI, ["issue", "view", opts.key, "--comments", "10", "--raw"]);
+  try {
+    const issue = await client.getIssue(opts.key);
+    const jiraData = toJiraData(issue);
 
-  if (result.exitCode !== 0) {
-    errorResponse("FETCH_FAILED", result.stderr || "Failed to fetch issue");
+    // Track issue in local file
+    if (!opts.noTrack) {
+      const tracked = loadIssue(opts.key) ?? createDefaultIssue(opts.key);
+      syncJiraData(tracked, jiraData);
+      saveIssue(tracked);
+    }
+
+    // Output analysis prompt to stderr (for Claude Code to see and act on)
+    console.error(formatAnalysisPrompt(opts.key, jiraData));
+
+    // Output JSON to stdout (for programmatic use)
+    successResponse({ key: opts.key, ...jiraData });
+  } catch (e) {
+    handleApiError(e, "FETCH");
   }
-
-  // Parse the raw output from jira-cli
-  const jiraData = parseJiraCliOutput(opts.key, result.stdout);
-
-  // Track issue in local file
-  if (!opts.noTrack) {
-    const tracked = loadIssue(opts.key) ?? createDefaultIssue(opts.key);
-    syncJiraData(tracked, jiraData);
-    saveIssue(tracked);
-  }
-
-  // Output analysis prompt to stderr (for Claude Code to see and act on)
-  console.error(formatAnalysisPrompt(opts.key, jiraData));
-
-  // Output JSON to stdout (for programmatic use)
-  successResponse({ key: opts.key, ...jiraData });
-}
-
-// Convert jira-cli raw output into our JiraData format using shared parser
-function parseJiraCliOutput(key: string, raw: string): JiraData {
-  const parsed = parseJiraCliRawOutput(key, raw);
-  return {
-    id: parsed.id,
-    summary: parsed.summary,
-    status: parsed.status,
-    issueType: parsed.issueType,
-    priority: parsed.priority,
-    assignee: parsed.assigneeName ? { name: parsed.assigneeName, email: "" } : null,
-    reporter: parsed.reporterName ? { name: parsed.reporterName } : null,
-    created: parsed.created,
-    updated: parsed.updated,
-    description: parsed.description,
-    comments: parsed.comments,
-    linkedIssues: parsed.linkedIssues,
-  };
 }
 
 // Format analysis prompt for Claude Code
@@ -122,30 +173,50 @@ export interface IssueCreateOpts {
 }
 
 export async function issueCreate(opts: IssueCreateOpts): Promise<void> {
-  requireCli(JIRA_CLI, JIRA_INSTALL_HINT);
+  const client = getClient();
 
-  const args = ["issue", "create", "-t", opts.type, "-s", opts.summary, "--no-input"];
+  const data: CreateIssueData = {
+    fields: {
+      project: { key: opts.project },
+      summary: opts.summary,
+      issuetype: { name: opts.type },
+    },
+  };
 
-  if (opts.description) args.push("-b", opts.description);
-  if (opts.priority) args.push("-y", opts.priority);
-  if (opts.labels) args.push("-l", opts.labels);
-  if (opts.assignee) args.push("-a", opts.assignee);
-
-  const result = execCli(JIRA_CLI, args);
-
-  if (result.exitCode !== 0) {
-    errorResponse("CREATE_FAILED", result.stderr || "Failed to create issue");
+  if (opts.description) {
+    data.fields.description = {
+      type: "doc",
+      version: 1,
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: opts.description }],
+        },
+      ],
+    };
   }
 
-  // Parse issue key from output (format: "Issue ABC-123 created")
-  const keyMatch = result.stdout.match(/([A-Z]+-\d+)/);
-  const key = keyMatch?.[1] ?? "unknown";
+  if (opts.priority) {
+    data.fields.priority = { name: opts.priority };
+  }
 
-  successResponse({
-    key,
-    self: "",
-    id: "",
-  });
+  if (opts.labels) {
+    data.fields.labels = opts.labels.split(",").map((l) => l.trim());
+  }
+
+  // Note: assignee requires accountId, not username
+  // For now, skip - user can assign after creation
+
+  try {
+    const result = await client.createIssue(data);
+    successResponse({
+      key: result.key,
+      id: result.id,
+      self: result.self,
+    });
+  } catch (e) {
+    handleApiError(e, "CREATE");
+  }
 }
 
 // Issue Transition
@@ -156,24 +227,40 @@ export interface IssueTransitionOpts {
 }
 
 export async function issueTransition(opts: IssueTransitionOpts): Promise<void> {
-  requireCli(JIRA_CLI, JIRA_INSTALL_HINT);
+  const client = getClient();
 
-  const args = ["issue", "move", opts.key, opts.transition];
+  try {
+    // Get available transitions
+    const { transitions } = await client.getTransitions(opts.key);
 
-  if (opts.comment) {
-    args.push("--comment", opts.comment);
+    // Find matching transition by name (case-insensitive)
+    const transition = transitions.find(
+      (t) => t.name.toLowerCase() === opts.transition.toLowerCase()
+    );
+
+    if (!transition) {
+      const available = transitions.map((t) => t.name).join(", ");
+      errorResponse(
+        "TRANSITION_NOT_FOUND",
+        `Transition "${opts.transition}" not available. Available: ${available}`
+      );
+    }
+
+    // Do the transition
+    await client.doTransition(opts.key, transition.id);
+
+    // Add comment if provided
+    if (opts.comment) {
+      await client.addComment(opts.key, opts.comment);
+    }
+
+    successResponse({
+      issueKey: opts.key,
+      newStatus: transition.name,
+    });
+  } catch (e) {
+    handleApiError(e, "TRANSITION");
   }
-
-  const result = execCli(JIRA_CLI, args);
-
-  if (result.exitCode !== 0) {
-    errorResponse("TRANSITION_FAILED", result.stderr || `Failed to transition issue to ${opts.transition}`);
-  }
-
-  successResponse({
-    issueKey: opts.key,
-    newStatus: opts.transition,
-  });
 }
 
 // Issue Comment
@@ -183,21 +270,21 @@ export interface IssueCommentOpts {
 }
 
 export async function issueComment(opts: IssueCommentOpts): Promise<void> {
-  requireCli(JIRA_CLI, JIRA_INSTALL_HINT);
+  const client = getClient();
 
   const signedBody = appendCommentSignature(opts.body);
-  const result = execCli(JIRA_CLI, ["issue", "comment", "add", opts.key, "-b", signedBody]);
 
-  if (result.exitCode !== 0) {
-    errorResponse("COMMENT_FAILED", result.stderr || "Failed to add comment");
+  try {
+    const result = await client.addComment(opts.key, signedBody);
+    successResponse({
+      id: result.id,
+      issueKey: opts.key,
+      body: signedBody,
+      created: new Date().toISOString(),
+    });
+  } catch (e) {
+    handleApiError(e, "COMMENT");
   }
-
-  successResponse({
-    id: "",
-    issueKey: opts.key,
-    body: signedBody,
-    created: new Date().toISOString(),
-  });
 }
 
 // Issue Search
@@ -207,34 +294,28 @@ export interface IssueSearchOpts {
 }
 
 export async function issueSearch(opts: IssueSearchOpts): Promise<void> {
-  requireCli(JIRA_CLI, JIRA_INSTALL_HINT);
+  const client = getClient();
 
-  const args = ["issue", "list", "-q", opts.jql, "--plain"];
+  const maxResults = parseInt(opts.maxResults, 10) || 50;
 
-  const limit = parseInt(opts.maxResults, 10);
-  if (limit && limit > 0) {
-    args.push("--paginate", String(limit));
+  try {
+    const result = await client.searchJql(opts.jql, maxResults);
+
+    const issues = result.issues.map((issue) => ({
+      key: issue.key,
+      summary: issue.fields.summary,
+      status: issue.fields.status.name,
+      assignee: issue.fields.assignee
+        ? { name: issue.fields.assignee.displayName, email: issue.fields.assignee.emailAddress ?? "" }
+        : null,
+      issueType: issue.fields.issuetype.name,
+      priority: issue.fields.priority?.name ?? "None",
+    }));
+
+    successResponse({ total: result.total, issues });
+  } catch (e) {
+    handleApiError(e, "SEARCH");
   }
-
-  const result = execCli(JIRA_CLI, args);
-
-  if (result.exitCode !== 0) {
-    errorResponse("SEARCH_FAILED", result.stderr || "Failed to search issues");
-  }
-
-  // Parse plain text output - each line is typically: KEY    Summary    Status    Assignee
-  const lines = result.stdout.trim().split("\n").filter(Boolean);
-  const issues = lines.slice(1).map((line) => {
-    const parts = line.split(/\s{2,}/); // Split by 2+ spaces
-    return {
-      key: parts[0] ?? "",
-      summary: parts[1] ?? "",
-      status: parts[2] ?? "",
-      assignee: parts[3] ? { name: parts[3], email: "" } : null,
-    };
-  });
-
-  successResponse({ total: issues.length, issues });
 }
 
 // Issue Assign
@@ -244,19 +325,36 @@ export interface IssueAssignOpts {
 }
 
 export async function issueAssign(opts: IssueAssignOpts): Promise<void> {
-  requireCli(JIRA_CLI, JIRA_INSTALL_HINT);
+  const client = getClient();
 
-  // jira-cli uses "x" for unassigned
-  const assignee = opts.assignee === "unassigned" ? "x" : opts.assignee;
+  try {
+    // Handle unassign
+    if (opts.assignee === "unassigned" || opts.assignee === "x" || opts.assignee === "") {
+      await client.assignIssue(opts.key, null);
+      successResponse({
+        issueKey: opts.key,
+        assignee: null,
+      });
+      return;
+    }
 
-  const result = execCli(JIRA_CLI, ["issue", "assign", opts.key, assignee]);
+    // Search for user by name/email to get accountId
+    const users = await client.searchUsers(opts.assignee);
 
-  if (result.exitCode !== 0) {
-    errorResponse("ASSIGN_FAILED", result.stderr || "Failed to assign issue");
+    if (users.length === 0) {
+      errorResponse("USER_NOT_FOUND", `No user found matching "${opts.assignee}"`);
+    }
+
+    // Use first match
+    const user = users[0];
+    await client.assignIssue(opts.key, user.accountId);
+
+    successResponse({
+      issueKey: opts.key,
+      assignee: user.displayName,
+      accountId: user.accountId,
+    });
+  } catch (e) {
+    handleApiError(e, "ASSIGN");
   }
-
-  successResponse({
-    issueKey: opts.key,
-    assignee: opts.assignee,
-  });
 }

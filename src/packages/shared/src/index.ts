@@ -38,6 +38,7 @@ export {
 } from "./config/global.js";
 export type {
   GlobalConfig,
+  JiraConfig,
   OpenAPIAuthConfig,
   OpenAPISpecConfig,
 } from "./config/global.js";
@@ -62,6 +63,31 @@ export type {
 
 // HTTP
 export { withRetry, isTransientError } from "./http/index.js";
+
+// Jira
+export {
+  createJiraClient,
+  getJiraConfig,
+  JiraApiError,
+} from "./jira/index.js";
+export type {
+  JiraClient,
+  JiraClientConfig,
+  JiraUser,
+  JiraStatus,
+  JiraIssueType,
+  JiraPriority,
+  JiraProject,
+  JiraComment,
+  JiraIssueLink,
+  JiraIssueFields,
+  JiraIssue,
+  JiraTransition,
+  JiraSearchResult,
+  AdfDocument,
+  CreateIssueData,
+  CreateIssueResponse,
+} from "./jira/index.js";
 
 // Output
 export { successResponse, errorResponse } from "./output/json.js";
