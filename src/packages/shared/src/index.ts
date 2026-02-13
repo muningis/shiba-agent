@@ -2,7 +2,7 @@
 export { getEnv, requireEnv } from "./env.js";
 
 // CLI execution
-export { execCli, requireCli, type CliResult } from "./cli/exec.js";
+export { execCli, requireCli, isCliAvailable, type CliResult } from "./cli/exec.js";
 
 // Auth (only Figma - GitLab/Jira use CLIs)
 export { getFigmaToken } from "./auth/figma.js";
@@ -19,6 +19,7 @@ export {
   getFigmaDir,
   getGlabDir,
   getJiraDir,
+  getTicketsDir,
   getRepoRoot,
   ensureConfigDir,
   ensureDataDir,
@@ -27,6 +28,7 @@ export {
   ensureOapiDir,
   ensureGlabDir,
   ensureJiraDir,
+  ensureTicketsDir,
   getCurrentEnvironment,
   isDataInitialized,
 } from "./config/global.js";
@@ -42,12 +44,16 @@ export {
   DEFAULT_BRANCH_PATTERN,
   DEFAULT_COMMIT_STYLE,
   DEFAULT_SHIBA_SIGNATURE,
+  DEFAULT_WORKFLOW_ENABLED,
+  DEFAULT_WORKFLOW_TRANSITIONS,
 } from "./config/preferences.js";
 export type {
   ShibaPreferences,
   BranchNamingConfig,
   CommitMessageConfig,
   SignatureConfig,
+  WorkflowConfig,
+  WorkflowTransitionsConfig,
 } from "./config/preferences.js";
 
 // Output

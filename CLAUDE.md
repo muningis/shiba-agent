@@ -1,24 +1,30 @@
-# Shiba Agent — GitLab & Jira CLI for Claude Code
+# Shiba Agent — GitLab, GitHub & Jira CLI for Claude Code
 
 This repository provides the `shiba` CLI tool designed to be invoked by Claude Code agents from any project.
 
 ## Prerequisites
 
-Shiba wraps official CLIs for GitLab and Jira. Install them first:
+Shiba wraps official CLIs. All are optional - install only what you need:
 
 ```bash
-# GitLab CLI (glab)
+# GitLab CLI (optional)
 brew install glab
 
-# Jira CLI (jira-cli by ankitpokhrel)
+# GitHub CLI (optional)
+brew install gh
+
+# Jira CLI (optional)
 brew install ankitpokhrel/jira-cli/jira-cli
 ```
 
-Then configure each CLI:
+Then configure the CLIs you installed:
 
 ```bash
 # GitLab: authenticate with your instance
 glab auth login
+
+# GitHub: authenticate
+gh auth login
 
 # Jira: initialize configuration
 jira init
@@ -51,6 +57,7 @@ Shiba uses git branches to isolate data between environments (work, home, client
 - Config and preferences
 - Cached OpenAPI specs
 - Tracked Jira issues
+- Ticket notes (shared across repos)
 - Figma cache
 - GitLab CLI (`glab`) authentication
 - Jira CLI authentication
@@ -118,6 +125,10 @@ Preferences are stored per-environment in `~/.shiba-agent/data/config.json`, wit
 | `commitMessage.style` | `conventional` or `custom` | `conventional` |
 | `commitMessage.template` | Custom template (when style=custom). Placeholders: `{key}`, `{type}`, `{scope}`, `{description}` | — |
 | `signatures.shibaSignature` | Add 🐕 Shiba Agent signature to comments | `false` |
+| `workflow.enabled` | Enable automatic Jira transitions | `false` |
+| `workflow.transitions.onBranchCreate` | Jira status when branch is created | `In Progress` |
+| `workflow.transitions.onMrCreate` | Jira status when MR/PR is created | `Peer Review` |
+| `workflow.transitions.onMerge` | Jira status when MR/PR is merged | `Ready for QA` |
 
 Use `shiba config` commands to manage settings:
 
@@ -138,6 +149,7 @@ shiba config set shiba-signature on
 │   ├── config.json       # Per-environment preferences
 │   ├── oapi/             # Cached OpenAPI specs
 │   ├── issues/           # Tracked Jira issues
+│   ├── tickets/          # Per-ticket notes (shared across repos)
 │   ├── figma/            # Cached Figma files
 │   ├── glab/             # GitLab CLI config (symlinked from ~/.config/glab-cli)
 │   └── jira/             # Jira CLI config (symlinked from ~/.config/.jira)
@@ -159,7 +171,8 @@ All output is JSON to stdout.
 |---------|---------|-----------|
 | `shiba init` | Initialize project config | `--force` |
 | `shiba tui` | Interactive task navigator | — |
-| `shiba branch` | Generate branch name | `--key`, `--description`, `--type` |
+| `shiba branch name` | Generate branch name (no git operation) | `--key`, `--description`, `--type` |
+| `shiba branch create` | Create git branch + Jira transition | `--key`, `--description`, `--type`, `--no-transition` |
 | `shiba commit-msg` | Generate commit message | `--type`, `--description`, `--key`, `--scope` |
 | `shiba config show` | Show configuration | `--global`, `--project` |
 | `shiba config set` | Set configuration value | `--key`, `--value`, `--global` |
@@ -194,6 +207,19 @@ All output is JSON to stdout.
 | `shiba gitlab pipeline-status` | Get pipeline + jobs | `--project`, `--pipeline-id` |
 | `shiba gitlab pipeline-list` | List pipelines | `--project`, `--ref`, `--limit` |
 
+### GitHub Commands (`shiba github`)
+
+| Command | Purpose | Key Flags |
+|---------|---------|-----------|
+| `shiba github pr-create` | Create pull request | `--title`, `--body`, `--base`, `--draft` |
+| `shiba github pr-list` | List pull requests | `--state`, `--limit`, `--author` |
+| `shiba github pr-merge` | Merge a PR | `--number`, `--squash`, `--delete-branch` |
+| `shiba github pr-comment` | Comment on PR | `--number`, `--body` |
+| `shiba github issue-get` | Get issue details | `--number`, `--repo` |
+| `shiba github issue-create` | Create issue | `--title`, `--body`, `--labels` |
+| `shiba github issue-list` | List issues | `--state`, `--limit`, `--assignee` |
+| `shiba github issue-comment` | Comment on issue | `--number`, `--body` |
+
 ### Jira Commands (`shiba jira`)
 
 | Command | Purpose | Key Flags |
@@ -223,6 +249,51 @@ Local issue tracking for agent workflow. Issue files are stored in `~/.shiba-age
 | `shiba issue add-requirement` | Add requirement | `--key`, `--title`, `--description`, `--type`, `--priority` |
 
 **Note:** `shiba jira issue-get` automatically creates/updates the local issue tracking file. Use `--no-track` to disable this behavior.
+
+### Workflow Commands (`shiba workflow`)
+
+Automatic Jira transitions based on git lifecycle events. Enable with `shiba config set workflow-enabled on`.
+
+| Command | Purpose | Key Flags |
+|---------|---------|-----------|
+| `shiba workflow status` | Show workflow config | — |
+| `shiba workflow on-mr-create` | Transition to "Peer Review" | `--key`, `--draft` |
+| `shiba workflow on-merge` | Transition to "Ready for QA" | `--key` |
+
+**Integration:** Call these after MR/PR operations to automate Jira transitions:
+```bash
+# After creating an MR
+shiba gitlab mr-create ... && shiba workflow on-mr-create --key PROJ-123
+
+# After merging
+shiba gitlab mr-merge ... && shiba workflow on-merge --key PROJ-123
+```
+
+### Ticket Notes Commands (`shiba notes`)
+
+Per-ticket notes shared across repositories. Useful for Claude Code to track decisions, todos, and context without loading full issue files.
+
+| Command | Purpose | Key Flags |
+|---------|---------|-----------|
+| `shiba notes add` | Add a note | `--key`, `--content`, `--category` |
+| `shiba notes list` | List notes (summary) | `--key` |
+| `shiba notes get` | Get full note | `--key`, `--id` |
+| `shiba notes query` | Query with filters | `--key`, `--category`, `--limit` |
+| `shiba notes summary` | Token-efficient overview | `--key` |
+| `shiba notes delete` | Delete a note | `--key`, `--id` |
+| `shiba notes clear` | Clear all notes | `--key` |
+| `shiba notes tickets` | List all tickets with notes | — |
+
+**Categories:** `decision`, `todo`, `warning`, `info`, `question`, `progress`
+
+**Token-efficient workflow:**
+```bash
+# Get summary first (minimal tokens)
+shiba notes summary --key PROJ-123
+
+# Fetch specific notes by ID if needed
+shiba notes get --key PROJ-123 --id abc123
+```
 
 Run `shiba <command> --help` for full option details.
 

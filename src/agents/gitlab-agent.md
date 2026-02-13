@@ -122,10 +122,43 @@ Common error codes and what to do:
 | `CONFLICT` | Merge conflicts exist | Tell user to resolve conflicts first |
 | `VALIDATION_ERROR` | Invalid arguments | Check `--help` for correct usage |
 
+## Workflow Automation
+
+After MR operations, call workflow commands to automatically transition Jira issues (if workflow is enabled and jira-cli is available):
+
+### After Creating a Non-Draft MR
+
+```bash
+# Extract Jira key from MR title (e.g., "PROJ-123: Add feature")
+shiba workflow on-mr-create --key "PROJ-123"
+```
+
+This transitions the issue to "Peer Review" (configurable).
+
+### After Merging an MR
+
+```bash
+shiba workflow on-merge --key "PROJ-123"
+```
+
+This transitions the issue to "Ready for QA" (configurable).
+
+### Check Workflow Status
+
+```bash
+shiba workflow status
+```
+
+Shows whether workflow automation is enabled and current transition settings.
+
+**Note:** If the Jira key can be extracted from the MR title, always call the appropriate workflow command after successful MR operations.
+
 ## Behavioral Rules
 
 1. **Always check pipeline status before suggesting a merge.** If the pipeline is running or failed, warn the user.
 2. **When creating MRs**, suggest using `--draft` if the branch might not be ready.
-3. **Parse JSON output** — extract the specific fields needed for the next step (e.g. `webUrl` to share with user, `iid` for follow-up operations).
-4. **Keep responses concise** — report the key outcome (MR URL, pipeline status) without echoing the full JSON.
-5. **If an operation fails**, read the error code and suggest a specific fix rather than a generic retry.
+3. **After creating a non-draft MR**, call `shiba workflow on-mr-create --key <JIRA_KEY>` to transition Jira.
+4. **After merging an MR**, call `shiba workflow on-merge --key <JIRA_KEY>` to transition Jira.
+5. **Parse JSON output** — extract the specific fields needed for the next step (e.g. `webUrl` to share with user, `iid` for follow-up operations).
+6. **Keep responses concise** — report the key outcome (MR URL, pipeline status) without echoing the full JSON.
+7. **If an operation fails**, read the error code and suggest a specific fix rather than a generic retry.

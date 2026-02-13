@@ -23,12 +23,22 @@ export function execCli(cmd: string, args: string[]): CliResult {
 }
 
 /**
+ * Check if a CLI is installed (non-throwing)
+ */
+export function isCliAvailable(name: string): boolean {
+  try {
+    execSync(`which ${name}`, { encoding: "utf-8", stdio: "pipe" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Check if a CLI is installed, throw if not
  */
 export function requireCli(name: string, installHint?: string): void {
-  try {
-    execSync(`which ${name}`, { encoding: "utf-8", stdio: "pipe" });
-  } catch {
+  if (!isCliAvailable(name)) {
     const hint = installHint ?? `brew install ${name}`;
     throw new Error(`${name} CLI not found. Install with: ${hint}`);
   }

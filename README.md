@@ -1,16 +1,19 @@
 # Shiba Agent
 
-Unified CLI for GitLab & Jira integration with Claude Code agents. Features environment isolation to keep work and personal data separate.
+Unified CLI for GitLab, GitHub & Jira integration with Claude Code agents. Features environment isolation to keep work and personal data separate.
 
 ## Prerequisites
 
-Shiba wraps official CLIs. Install them first:
+Shiba wraps official CLIs. Install the ones you need (all are optional):
 
 ```bash
-# GitLab CLI
+# GitLab CLI (optional)
 brew install glab
 
-# Jira CLI
+# GitHub CLI (optional)
+brew install gh
+
+# Jira CLI (optional)
 brew install ankitpokhrel/jira-cli/jira-cli
 ```
 
@@ -65,13 +68,19 @@ shiba env current       # Show current environment
 shiba env delete <name> # Delete environment (interactive)
 ```
 
+### Branch & Commit
+
+```bash
+shiba branch name --key PROJ-123 --description "add feature"   # Generate branch name
+shiba branch create --key PROJ-123 --description "add feature" # Create branch + Jira transition
+shiba commit-msg --type feat --description "add login"         # Generate commit message
+```
+
 ### Core
 
 ```bash
 shiba init              # Create .shiba/config.json with GitLab project info
 shiba tui               # Interactive Jira issue navigator
-shiba branch --key PROJ-123 --description "add feature"  # Generate branch name
-shiba commit-msg --type feat --description "add login"   # Generate commit message
 shiba config show       # Show effective configuration
 ```
 
@@ -95,6 +104,17 @@ shiba gitlab pipeline-list --project <id>
 shiba gitlab pipeline-status --project <id> --pipeline-id <id>
 ```
 
+### GitHub (wraps gh)
+
+```bash
+shiba github pr-create --title "Add feature"
+shiba github pr-list --state open
+shiba github pr-merge --number 123 --squash
+shiba github issue-get --number 456
+shiba github issue-create --title "Bug report"
+shiba github issue-list --assignee @me
+```
+
 ### Jira (wraps jira-cli)
 
 ```bash
@@ -102,6 +122,35 @@ shiba jira issue-get --key PROJ-123
 shiba jira issue-create --project PROJ --type Task --summary "Title"
 shiba jira issue-transition --key PROJ-123 --transition "In Progress"
 shiba jira issue-search --jql "assignee = currentUser()"
+```
+
+### Workflow Automation
+
+Automatic Jira transitions based on git lifecycle events:
+
+```bash
+shiba workflow status                        # Show workflow config
+shiba workflow on-mr-create --key PROJ-123   # Transition to "Peer Review"
+shiba workflow on-merge --key PROJ-123       # Transition to "Ready for QA"
+```
+
+Configure workflow in your environment:
+```bash
+shiba config set workflow-enabled on
+```
+
+### Ticket Notes
+
+Per-ticket notes shared across repositories (useful for Claude Code context):
+
+```bash
+shiba notes add --key PROJ-123 --category decision --content "Using React Query"
+shiba notes list --key PROJ-123              # Token-efficient summary
+shiba notes get --key PROJ-123 --id abc123   # Get full note
+shiba notes query --key PROJ-123 --category todo
+shiba notes summary --key PROJ-123           # Minimal overview
+shiba notes clear --key PROJ-123             # Clear all notes
+shiba notes tickets                          # List all tickets with notes
 ```
 
 ### Figma
@@ -127,7 +176,8 @@ shiba config set shiba-signature on              # Add signature to comments
 
 The setup script automatically links agents to `~/.claude/agents/`:
 
-- **gitlab-agent** — MRs, pipelines, code review
+- **gitlab-agent** — GitLab MRs, pipelines, code review (with Jira workflow automation)
+- **github-agent** — GitHub PRs, issues, code review (with Jira workflow automation)
 - **jira-agent** — Issues, transitions, JQL searches
 - **project-manager** — Orchestrates cross-system workflows
 

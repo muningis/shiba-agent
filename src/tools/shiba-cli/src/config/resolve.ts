@@ -35,6 +35,26 @@ export function getEffectivePreferences(cwd: string = process.cwd()): Required<S
         globalConfig.preferences?.signatures?.shibaSignature ??
         defaults.signatures.shibaSignature,
     },
+    workflow: {
+      enabled:
+        projectConfig?.preferences?.workflow?.enabled ??
+        globalConfig.preferences?.workflow?.enabled ??
+        defaults.workflow.enabled,
+      transitions: {
+        onBranchCreate:
+          projectConfig?.preferences?.workflow?.transitions?.onBranchCreate ??
+          globalConfig.preferences?.workflow?.transitions?.onBranchCreate ??
+          defaults.workflow.transitions?.onBranchCreate ?? "In Progress",
+        onMrCreate:
+          projectConfig?.preferences?.workflow?.transitions?.onMrCreate ??
+          globalConfig.preferences?.workflow?.transitions?.onMrCreate ??
+          defaults.workflow.transitions?.onMrCreate ?? "Peer Review",
+        onMerge:
+          projectConfig?.preferences?.workflow?.transitions?.onMerge ??
+          globalConfig.preferences?.workflow?.transitions?.onMerge ??
+          defaults.workflow.transitions?.onMerge ?? "Ready for QA",
+      },
+    },
   };
 }
 

@@ -83,6 +83,7 @@ const ISSUES_DIR = join(DATA_DIR, "issues");
 const FIGMA_DIR = join(DATA_DIR, "figma");
 const GLAB_DIR = join(DATA_DIR, "glab");
 const JIRA_DIR = join(DATA_DIR, "jira");
+const TICKETS_DIR = join(DATA_DIR, "tickets");
 
 export function getConfigDir(): string {
   return CONFIG_DIR;
@@ -116,6 +117,10 @@ export function getGlabDir(): string {
 
 export function getJiraDir(): string {
   return JIRA_DIR;
+}
+
+export function getTicketsDir(): string {
+  return TICKETS_DIR;
 }
 
 export function ensureDataDir(): void {
@@ -155,6 +160,12 @@ export function ensureGlabDir(): void {
 export function ensureJiraDir(): void {
   if (!existsSync(JIRA_DIR)) {
     mkdirSync(JIRA_DIR, { recursive: true });
+  }
+}
+
+export function ensureTicketsDir(): void {
+  if (!existsSync(TICKETS_DIR)) {
+    mkdirSync(TICKETS_DIR, { recursive: true });
   }
 }
 

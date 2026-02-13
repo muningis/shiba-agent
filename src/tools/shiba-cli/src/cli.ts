@@ -42,8 +42,33 @@ import {
 } from "./commands/issue.js";
 import { createFigmaCommands } from "./commands/figma.js";
 import { configShow, configSet } from "./commands/config.js";
-import { branch } from "./commands/branch.js";
+import { branch, branchCreate } from "./commands/branch.js";
 import { commitMsg } from "./commands/commit.js";
+import {
+  prCreate,
+  prList,
+  prMerge,
+  prComment,
+  ghIssueGet,
+  ghIssueCreate,
+  ghIssueList,
+  ghIssueComment,
+} from "./commands/github.js";
+import {
+  workflowOnMrCreate,
+  workflowOnMerge,
+  workflowStatus,
+} from "./commands/workflow.js";
+import {
+  notesAdd,
+  notesList,
+  notesGet,
+  notesQuery,
+  notesSummary,
+  notesDelete,
+  notesClear,
+  notesListTickets,
+} from "./commands/notes.js";
 import {
   envInit,
   envCreate,
@@ -310,6 +335,185 @@ gitlab
         ref: opts.ref,
         status: opts.status,
         limit: opts.limit,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+// GitHub commands
+const github = program
+  .command("github")
+  .description("GitHub operations (pull requests, issues)");
+
+github
+  .command("pr-create")
+  .description("Create a pull request")
+  .requiredOption("--title <title>", "Pull request title")
+  .option("--body <text>", "Pull request body")
+  .option("--base <branch>", "Base branch for the PR")
+  .option("--head <branch>", "Head branch for the PR")
+  .option("--draft", "Create as draft PR", false)
+  .option("--assignees <users>", "Comma-separated assignees")
+  .option("--reviewers <users>", "Comma-separated reviewers")
+  .option("--labels <labels>", "Comma-separated labels")
+  .option("--repo <repo>", "Repository in owner/repo format")
+  .action(async (opts) => {
+    try {
+      await prCreate({
+        title: opts.title,
+        body: opts.body,
+        base: opts.base,
+        head: opts.head,
+        draft: opts.draft,
+        assignees: opts.assignees,
+        reviewers: opts.reviewers,
+        labels: opts.labels,
+        repo: opts.repo,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+github
+  .command("pr-list")
+  .description("List pull requests")
+  .option("--state <state>", "Filter by state: open, closed, merged, all", "open")
+  .option("--limit <n>", "Maximum results to return", "20")
+  .option("--author <username>", "Filter by author")
+  .option("--assignee <username>", "Filter by assignee")
+  .option("--base <branch>", "Filter by base branch")
+  .option("--repo <repo>", "Repository in owner/repo format")
+  .action(async (opts) => {
+    try {
+      await prList({
+        state: opts.state,
+        limit: opts.limit,
+        author: opts.author,
+        assignee: opts.assignee,
+        base: opts.base,
+        repo: opts.repo,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+github
+  .command("pr-merge")
+  .description("Merge a pull request")
+  .requiredOption("--number <n>", "Pull request number")
+  .option("--squash", "Squash commits when merging", false)
+  .option("--delete-branch", "Delete branch after merge", false)
+  .option("--auto", "Enable auto-merge", false)
+  .option("--repo <repo>", "Repository in owner/repo format")
+  .action(async (opts) => {
+    try {
+      await prMerge({
+        number: opts.number,
+        squash: opts.squash,
+        deleteBranch: opts.deleteBranch,
+        auto: opts.auto,
+        repo: opts.repo,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+github
+  .command("pr-comment")
+  .description("Add a comment to a pull request")
+  .requiredOption("--number <n>", "Pull request number")
+  .requiredOption("--body <text>", "Comment body")
+  .option("--repo <repo>", "Repository in owner/repo format")
+  .action(async (opts) => {
+    try {
+      await prComment({
+        number: opts.number,
+        body: opts.body,
+        repo: opts.repo,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+github
+  .command("issue-get")
+  .description("Get details of a GitHub issue")
+  .requiredOption("--number <n>", "Issue number")
+  .option("--repo <repo>", "Repository in owner/repo format")
+  .action(async (opts) => {
+    try {
+      await ghIssueGet({
+        number: opts.number,
+        repo: opts.repo,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+github
+  .command("issue-create")
+  .description("Create a GitHub issue")
+  .requiredOption("--title <title>", "Issue title")
+  .option("--body <text>", "Issue body")
+  .option("--assignees <users>", "Comma-separated assignees")
+  .option("--labels <labels>", "Comma-separated labels")
+  .option("--repo <repo>", "Repository in owner/repo format")
+  .action(async (opts) => {
+    try {
+      await ghIssueCreate({
+        title: opts.title,
+        body: opts.body,
+        assignees: opts.assignees,
+        labels: opts.labels,
+        repo: opts.repo,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+github
+  .command("issue-list")
+  .description("List GitHub issues")
+  .option("--state <state>", "Filter by state: open, closed, all", "open")
+  .option("--limit <n>", "Maximum results to return", "20")
+  .option("--author <username>", "Filter by author")
+  .option("--assignee <username>", "Filter by assignee")
+  .option("--labels <labels>", "Filter by labels")
+  .option("--repo <repo>", "Repository in owner/repo format")
+  .action(async (opts) => {
+    try {
+      await ghIssueList({
+        state: opts.state,
+        limit: opts.limit,
+        author: opts.author,
+        assignee: opts.assignee,
+        labels: opts.labels,
+        repo: opts.repo,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+github
+  .command("issue-comment")
+  .description("Add a comment to a GitHub issue")
+  .requiredOption("--number <n>", "Issue number")
+  .requiredOption("--body <text>", "Comment body")
+  .option("--repo <repo>", "Repository in owner/repo format")
+  .action(async (opts) => {
+    try {
+      await ghIssueComment({
+        number: opts.number,
+        body: opts.body,
+        repo: opts.repo,
       });
     } catch (err) {
       handleCliError(err);
@@ -659,16 +863,40 @@ config
     }
   });
 
-// Branch command
-program
+// Branch commands
+const branchCmd = program
   .command("branch")
-  .description("Generate a branch name from configured pattern")
+  .description("Branch management and naming");
+
+branchCmd
+  .command("name")
+  .description("Generate a branch name from configured pattern (does not create branch)")
   .requiredOption("--key <key>", "Issue key (e.g. PROJ-123)")
   .option("--description <text>", "Branch description")
   .option("--type <type>", "Branch type (e.g. feature, fix)")
   .action(async (opts) => {
     try {
       await branch({ key: opts.key, description: opts.description, type: opts.type });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+branchCmd
+  .command("create")
+  .description("Create a git branch and optionally transition Jira issue")
+  .requiredOption("--key <key>", "Issue key (e.g. PROJ-123)")
+  .option("--description <text>", "Branch description")
+  .option("--type <type>", "Branch type (e.g. feature, fix)")
+  .option("--no-transition", "Skip Jira transition")
+  .action(async (opts) => {
+    try {
+      await branchCreate({
+        key: opts.key,
+        description: opts.description,
+        type: opts.type,
+        noTransition: !opts.transition,
+      });
     } catch (err) {
       handleCliError(err);
     }
@@ -772,6 +1000,153 @@ env
   .action(async () => {
     try {
       await envMigrate();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+// Workflow commands
+const workflow = program
+  .command("workflow")
+  .description("Workflow automation hooks for Jira transitions");
+
+workflow
+  .command("on-mr-create")
+  .description("Trigger Jira transition when MR/PR is created")
+  .requiredOption("--key <key>", "Issue key (e.g. PROJ-123)")
+  .option("--draft", "MR/PR is a draft", false)
+  .action(async (opts) => {
+    try {
+      await workflowOnMrCreate({ key: opts.key, draft: opts.draft });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+workflow
+  .command("on-merge")
+  .description("Trigger Jira transition when MR/PR is merged")
+  .requiredOption("--key <key>", "Issue key (e.g. PROJ-123)")
+  .action(async (opts) => {
+    try {
+      await workflowOnMerge({ key: opts.key });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+workflow
+  .command("status")
+  .description("Show current workflow configuration")
+  .action(async () => {
+    try {
+      await workflowStatus();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+// Notes commands (per-ticket notes shared across repos)
+const notes = program
+  .command("notes")
+  .description("Per-ticket notes management (shared across repositories)");
+
+notes
+  .command("add")
+  .description("Add a note to a ticket")
+  .requiredOption("--key <key>", "Ticket key (e.g. PROJ-123)")
+  .requiredOption("--content <text>", "Note content")
+  .option("--category <cat>", "Category: decision, todo, warning, info, question, progress", "info")
+  .action(async (opts) => {
+    try {
+      await notesAdd({ key: opts.key, content: opts.content, category: opts.category });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+notes
+  .command("list")
+  .description("List notes for a ticket (summary view)")
+  .requiredOption("--key <key>", "Ticket key (e.g. PROJ-123)")
+  .action(async (opts) => {
+    try {
+      await notesList({ key: opts.key });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+notes
+  .command("get")
+  .description("Get a specific note by ID")
+  .requiredOption("--key <key>", "Ticket key (e.g. PROJ-123)")
+  .requiredOption("--id <id>", "Note ID")
+  .action(async (opts) => {
+    try {
+      await notesGet({ key: opts.key, id: opts.id });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+notes
+  .command("query")
+  .description("Query notes with filters")
+  .requiredOption("--key <key>", "Ticket key (e.g. PROJ-123)")
+  .option("--category <cat>", "Filter by category")
+  .option("--limit <n>", "Maximum notes to return", "20")
+  .action(async (opts) => {
+    try {
+      await notesQuery({ key: opts.key, category: opts.category, limit: opts.limit });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+notes
+  .command("summary")
+  .description("Get token-efficient summary of notes")
+  .requiredOption("--key <key>", "Ticket key (e.g. PROJ-123)")
+  .action(async (opts) => {
+    try {
+      await notesSummary({ key: opts.key });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+notes
+  .command("delete")
+  .description("Delete a specific note")
+  .requiredOption("--key <key>", "Ticket key (e.g. PROJ-123)")
+  .requiredOption("--id <id>", "Note ID to delete")
+  .action(async (opts) => {
+    try {
+      await notesDelete({ key: opts.key, id: opts.id });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+notes
+  .command("clear")
+  .description("Clear all notes for a ticket")
+  .requiredOption("--key <key>", "Ticket key (e.g. PROJ-123)")
+  .action(async (opts) => {
+    try {
+      await notesClear({ key: opts.key });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+notes
+  .command("tickets")
+  .description("List all tickets with notes")
+  .action(async () => {
+    try {
+      await notesListTickets();
     } catch (err) {
       handleCliError(err);
     }
