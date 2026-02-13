@@ -2,8 +2,14 @@
 import { Command } from "commander";
 import { createInterface } from "readline";
 import { stdin, stdout } from "process";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import { handleCliError } from "@shiba-agent/shared";
 import { appendIssueSignature } from "./config/resolve.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(join(__dirname, "../package.json"), "utf-8"));
 
 function promptInput(question: string): Promise<string> {
   const rl = createInterface({ input: stdin, output: stdout });
@@ -126,7 +132,7 @@ import {
 const program = new Command()
   .name("shiba")
   .description("Shiba Agent CLI - Project setup and task navigation")
-  .version("1.0.0");
+  .version(pkg.version);
 
 program
   .command("init")
