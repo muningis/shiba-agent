@@ -14,6 +14,8 @@ export interface IssueProgress {
   completedAt: string | null;
   lastWorkedAt: string | null;
   blockers: string[];
+  /** Status before being blocked, restored when blockers are cleared. */
+  statusBeforeBlocked?: IssueProgressStatus | null;
 }
 
 // ===== Analyzed Requirements =====

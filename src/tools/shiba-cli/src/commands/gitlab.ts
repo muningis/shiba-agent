@@ -22,7 +22,7 @@ export async function mrCreate(opts: MRCreateOpts): Promise<void> {
 
   const args = ["mr", "create", "-s", opts.source, "-b", opts.target, "-t", opts.title, "-y"];
 
-  if (opts.description) args.push("-d", opts.description);
+  if (opts.description) args.push("-d", appendCommentSignature(opts.description));
   if (opts.draft) args.push("--draft");
   if (opts.assigneeIds) args.push("-a", opts.assigneeIds);
   if (opts.reviewerIds) args.push("--reviewer", opts.reviewerIds);

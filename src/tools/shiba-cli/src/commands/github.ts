@@ -22,7 +22,7 @@ export async function prCreate(opts: PrCreateOpts): Promise<void> {
 
   const args = ["pr", "create", "--title", opts.title];
 
-  if (opts.body) args.push("--body", opts.body);
+  if (opts.body) args.push("--body", appendCommentSignature(opts.body));
   if (opts.base) args.push("--base", opts.base);
   if (opts.head) args.push("--head", opts.head);
   if (opts.draft) args.push("--draft");
