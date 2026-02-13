@@ -139,3 +139,17 @@ export function appendCommentSignature(body: string): string {
 
   return lines.join("\n");
 }
+
+/**
+ * Append Shiba Agent attribution to issue bodies.
+ * Controlled by the signatures.shibaSignature preference.
+ */
+export function appendIssueSignature(body: string): string {
+  const prefs = getEffectivePreferences();
+
+  if (!prefs.signatures.shibaSignature) {
+    return body;
+  }
+
+  return `${body}\n\n---\n*Created with [Shiba Agent](https://github.com/muningis/shiba-agent)*`;
+}
