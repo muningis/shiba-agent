@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Text, useApp, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { TabBar } from "./components/TabBar.js";
@@ -9,8 +9,10 @@ import { StatusBar } from "./components/StatusBar.js";
 import { DataSection } from "./components/DataSection.js";
 import { CacheSection } from "./components/CacheSection.js";
 import { ConfigSection } from "./components/ConfigSection.js";
+import { SessionSection } from "./components/SessionSection.js";
 import { useIssues } from "./hooks/useIssues.js";
 import { useFullIssue } from "./hooks/useFullIssue.js";
+import { useSessionLauncher } from "./hooks/useSessionLauncher.js";
 import type { IssueBasic, View, Section } from "./types.js";
 import { nextSection, prevSection } from "./types.js";
 
@@ -21,6 +23,8 @@ export function App() {
   const [selectedIssue, setSelectedIssue] = useState<IssueBasic | null>(null);
 
   const { groups, refresh } = useIssues();
+  const { launch } = useSessionLauncher();
+  const [launchFeedback, setLaunchFeedback] = useState<string | null>(null);
 
   // Only fetch full Jira detail when viewing a Jira issue
   const fullIssueKey =
@@ -34,6 +38,22 @@ export function App() {
     error: errorFull,
     refresh: refreshFull,
   } = useFullIssue(fullIssueKey);
+
+  // Clear launch feedback after 3 seconds
+  useEffect(() => {
+    if (!launchFeedback) return;
+    const timer = setTimeout(() => setLaunchFeedback(null), 3000);
+    return () => clearTimeout(timer);
+  }, [launchFeedback]);
+
+  const handleLaunchSession = (issue: IssueBasic) => {
+    const result = launch(issue);
+    if (result.success) {
+      setLaunchFeedback(`Session launched for ${issue.key}`);
+    } else {
+      setLaunchFeedback(`Error: ${result.error}`);
+    }
+  };
 
   useInput((input, key) => {
     if (input === "q") {
@@ -66,6 +86,9 @@ export function App() {
           refreshFull();
         }
       }
+      if (input === "s" && view === "detail" && selectedIssue) {
+        handleLaunchSession(selectedIssue);
+      }
     }
     // Data and Cache sections handle their own Escape via useInput in their components
   });
@@ -88,7 +111,15 @@ export function App() {
         {section === "issues" && (
           <>
             {view === "list" && (
-              <IssueList groups={groups} onSelect={handleSelectIssue} />
+              <IssueList
+                groups={groups}
+                onSelect={handleSelectIssue}
+                onAction={(issue, action) => {
+                  if (action === "launch-session") {
+                    handleLaunchSession(issue);
+                  }
+                }}
+              />
             )}
 
             {view === "detail" && selectedIssue && (
@@ -130,9 +161,23 @@ export function App() {
           <CacheSection onViewChange={handleSubViewChange} />
         )}
 
+        {/* Sessions Section */}
+        {section === "sessions" && (
+          <SessionSection onViewChange={handleSubViewChange} />
+        )}
+
         {/* Config Section */}
         {section === "config" && (
           <ConfigSection />
+        )}
+
+        {/* Launch feedback */}
+        {launchFeedback && (
+          <Box paddingX={1}>
+            <Text color={launchFeedback.startsWith("Error") ? "red" : "green"}>
+              {launchFeedback}
+            </Text>
+          </Box>
         )}
       </Box>
 

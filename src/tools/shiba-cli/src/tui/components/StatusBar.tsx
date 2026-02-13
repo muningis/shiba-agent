@@ -12,9 +12,15 @@ export function StatusBar({ view, section }: StatusBarProps) {
 
   if (section === "issues") {
     if (view === "list") {
-      hints.push("↑↓ Navigate", "Enter Select", "r Refresh", "q Quit");
+      hints.push("↑↓ Navigate", "Enter Select", "s Start Session", "r Refresh", "q Quit");
     } else {
-      hints.push("Esc Back", "q Quit");
+      hints.push("Esc Back", "s Start Session", "q Quit");
+    }
+  } else if (section === "sessions") {
+    if (view === "detail") {
+      hints.push("Esc Back", "r Refresh", "q Quit");
+    } else {
+      hints.push("↑↓ Navigate", "Enter Details", "d Remove", "r Refresh", "q Quit");
     }
   } else if (section === "data" || section === "cache") {
     if (view === "detail") {

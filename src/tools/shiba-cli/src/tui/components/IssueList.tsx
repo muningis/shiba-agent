@@ -6,6 +6,7 @@ import type { IssueBasic, IssueTracker, TrackerGroup } from "../types.js";
 interface IssueListProps {
   groups: TrackerGroup[];
   onSelect: (issue: IssueBasic) => void;
+  onAction?: (issue: IssueBasic, action: string) => void;
 }
 
 type Row =
@@ -21,7 +22,7 @@ const TRACKER_COLORS: Record<IssueTracker, string> = {
   gitlab: "magenta",
 };
 
-export function IssueList({ groups, onSelect }: IssueListProps) {
+export function IssueList({ groups, onSelect, onAction }: IssueListProps) {
   const [cursor, setCursor] = useState(0);
 
   const { rows, selectableIndices } = useMemo(() => {
@@ -65,6 +66,12 @@ export function IssueList({ groups, onSelect }: IssueListProps) {
       const row = rows[rowIdx];
       if (row?.kind === "issue") {
         onSelect(row.issue);
+      }
+    } else if (input === "s" && onAction) {
+      const rowIdx = selectableIndices[cursor];
+      const row = rows[rowIdx];
+      if (row?.kind === "issue") {
+        onAction(row.issue, "launch-session");
       }
     }
   });

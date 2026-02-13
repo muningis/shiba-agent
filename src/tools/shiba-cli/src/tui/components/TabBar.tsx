@@ -10,6 +10,7 @@ const SECTION_LABELS: Record<Section, string> = {
   issues: "Issues",
   data: "Data",
   cache: "Cache",
+  sessions: "Sessions",
   config: "Config",
 };
 
