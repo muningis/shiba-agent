@@ -30,6 +30,17 @@ echo "Linking CLI tool..."
 cd "$SCRIPT_DIR/src/tools/shiba-cli"
 bun link
 
+# Verify installed version matches source
+EXPECTED_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$SCRIPT_DIR/src/tools/shiba-cli/package.json','utf-8')).version)")
+INSTALLED_VERSION=$(shiba --version 2>/dev/null || echo "unknown")
+if [ "$EXPECTED_VERSION" != "$INSTALLED_VERSION" ]; then
+  echo ""
+  echo "WARNING: Version mismatch!"
+  echo "  Expected: $EXPECTED_VERSION"
+  echo "  Installed: $INSTALLED_VERSION"
+  echo "  Try: cd $SCRIPT_DIR/src/tools/shiba-cli && bun link"
+fi
+
 # Create agents directory if it doesn't exist
 mkdir -p "$AGENTS_DIR"
 
@@ -77,7 +88,7 @@ if [ ! -d "$DATA_DIR/.git" ]; then
 fi
 
 echo ""
-echo "Setup complete!"
+echo "Setup complete! (shiba v$INSTALLED_VERSION)"
 echo ""
 echo "Next steps:"
 echo "  1. Create your first environment:"
