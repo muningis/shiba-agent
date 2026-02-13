@@ -73,6 +73,7 @@ export function useSessionLauncher(): UseSessionLauncherResult {
       const branchName = generateBranchName({
         key: issue.key,
         description: issue.summary,
+        issueType: issue.issueType,
       });
 
       // Compute worktree path

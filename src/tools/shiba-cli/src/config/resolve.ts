@@ -66,6 +66,32 @@ export function slugify(text: string): string {
 }
 
 /**
+ * Map a raw issue type (from Jira, GitHub, GitLab) to a conventional branch type.
+ * Falls back to slugifying the issue type for custom Jira types.
+ */
+export function mapIssueTypeToBranchType(issueType: string): string {
+  const mapping: Record<string, string> = {
+    bug: "fix",
+    story: "feat",
+    task: "chore",
+    "sub-task": "chore",
+    subtask: "chore",
+    epic: "epic",
+    improvement: "feat",
+    enhancement: "feat",
+    "new feature": "feat",
+    issue: "feat",
+  };
+
+  const mapped = mapping[issueType.toLowerCase()];
+  if (mapped) return mapped;
+
+  // For unknown types, slugify (e.g. "Design Review" → "design-review")
+  const slugified = slugify(issueType);
+  return slugified || "feat";
+}
+
+/**
  * Interpolate placeholders in a template string
  * Available placeholders: {key}, {description}, {type}, {scope}
  */
@@ -88,15 +114,33 @@ export function interpolateTemplate(
     result = result.replace(/{scope}/g, values.scope);
   }
 
+  // Safety net: strip any unreplaced placeholders
+  result = result.replace(/\{[^}]+\}/g, "");
+
+  // Clean up leftover separators from removed placeholders
+  result = result
+    .replace(/\/+/g, "/")   // collapse multiple slashes
+    .replace(/-+/g, "-")    // collapse multiple hyphens
+    .replace(/^[-/]+/, "")  // trim leading separators
+    .replace(/[-/]+$/, ""); // trim trailing separators
+
   return result;
 }
 
 /**
- * Generate a branch name from the configured pattern
+ * Generate a branch name from the configured pattern.
+ * If `type` is not explicitly provided but `issueType` is,
+ * derives `type` via mapIssueTypeToBranchType().
  */
-export function generateBranchName(opts: { key: string; description?: string; type?: string }): string {
+export function generateBranchName(opts: {
+  key: string;
+  description?: string;
+  type?: string;
+  issueType?: string;
+}): string {
   const prefs = getEffectivePreferences();
-  return interpolateTemplate(prefs.branchNaming.pattern, opts);
+  const type = opts.type ?? (opts.issueType ? mapIssueTypeToBranchType(opts.issueType) : undefined);
+  return interpolateTemplate(prefs.branchNaming.pattern, { ...opts, type });
 }
 
 /**
