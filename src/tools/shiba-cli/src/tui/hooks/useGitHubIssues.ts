@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { execCli, isCliAvailable } from "@shiba-agent/shared";
+import { execCli } from "@shiba-agent/shared";
 import type { IssueBasic } from "../types.js";
 
 interface UseGitHubIssuesResult {
@@ -9,20 +9,18 @@ interface UseGitHubIssuesResult {
   refresh: () => void;
 }
 
-export function useGitHubIssues(): UseGitHubIssuesResult {
+export function useGitHubIssues({ enabled = true }: { enabled?: boolean } = {}): UseGitHubIssuesResult {
   const [issues, setIssues] = useState<IssueBasic[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
   const fetchIssues = useCallback(async () => {
+    if (!enabled) return;
+
     setLoading(true);
     setError(null);
 
     try {
-      if (!isCliAvailable("gh")) {
-        throw new Error("GitHub CLI (gh) not installed. Run: brew install gh");
-      }
-
       const result = execCli("gh", [
         "issue", "list",
         "--json", "number,title,state,author,assignees,labels,createdAt,updatedAt,url",
@@ -53,11 +51,11 @@ export function useGitHubIssues(): UseGitHubIssuesResult {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
-    fetchIssues();
-  }, [fetchIssues]);
+    if (enabled) fetchIssues();
+  }, [fetchIssues, enabled]);
 
   return { issues, loading, error, refresh: fetchIssues };
 }

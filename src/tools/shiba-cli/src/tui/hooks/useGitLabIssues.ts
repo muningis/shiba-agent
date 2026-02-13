@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { execCli, isCliAvailable } from "@shiba-agent/shared";
+import { execCli } from "@shiba-agent/shared";
 import type { IssueBasic } from "../types.js";
 
 interface UseGitLabIssuesResult {
@@ -9,20 +9,18 @@ interface UseGitLabIssuesResult {
   refresh: () => void;
 }
 
-export function useGitLabIssues(): UseGitLabIssuesResult {
+export function useGitLabIssues({ enabled = true }: { enabled?: boolean } = {}): UseGitLabIssuesResult {
   const [issues, setIssues] = useState<IssueBasic[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
   const fetchIssues = useCallback(async () => {
+    if (!enabled) return;
+
     setLoading(true);
     setError(null);
 
     try {
-      if (!isCliAvailable("glab")) {
-        throw new Error("GitLab CLI (glab) not installed. Run: brew install glab");
-      }
-
       const result = execCli("glab", [
         "issue", "list",
         "-F", "json",
@@ -53,11 +51,11 @@ export function useGitLabIssues(): UseGitLabIssuesResult {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
-    fetchIssues();
-  }, [fetchIssues]);
+    if (enabled) fetchIssues();
+  }, [fetchIssues, enabled]);
 
   return { issues, loading, error, refresh: fetchIssues };
 }
