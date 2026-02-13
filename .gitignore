@@ -3,6 +3,8 @@ dist/
 .env
 .env.local
 *.tsbuildinfo
+
+# Legacy data directories (pre-environment isolation)
 config/*
 !config/.gitkeep
 oapi/*
@@ -11,3 +13,6 @@ issues/*
 !issues/.gitkeep
 figma/*
 !figma/.gitkeep
+
+# Environment data (stored at ~/.shiba-agent/data/)
+data/

@@ -78,6 +78,7 @@ import {
   envDelete,
   envMigrate,
 } from "./commands/env.js";
+import { setup } from "./commands/setup.js";
 
 const program = new Command()
   .name("shiba")
@@ -91,6 +92,20 @@ program
   .action(async (opts) => {
     try {
       await init(opts);
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+program
+  .command("setup")
+  .description("Interactive setup wizard for environment configuration")
+  .option("--reset", "Force reconfigure existing environment")
+  .option("--defaults", "Use default values without prompts")
+  .option("--skip-auth", "Skip CLI authentication prompts")
+  .action(async (opts) => {
+    try {
+      await setup({ reset: opts.reset, defaults: opts.defaults, skipAuth: opts.skipAuth });
     } catch (err) {
       handleCliError(err);
     }

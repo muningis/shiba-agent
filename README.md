@@ -32,6 +32,19 @@ This will:
 4. Symlink agent definitions to `~/.claude/agents/`
 5. Initialize data directory for environment isolation
 
+## Quick Start
+
+Run the interactive setup wizard:
+
+```bash
+shiba setup
+```
+
+This will guide you through:
+1. CLI authentication (GitLab, GitHub, Jira)
+2. Workflow automation preferences
+3. Branch naming and commit message configuration
+
 ## Environment Setup
 
 Shiba uses git branches to isolate data between environments (work, home, clients):
@@ -41,9 +54,8 @@ Shiba uses git branches to isolate data between environments (work, home, client
 shiba env create work
 shiba env use work      # Interactive confirmation required
 
-# Configure CLIs for this environment
-glab auth login         # GitLab auth stored per-environment
-jira init               # Jira config stored per-environment
+# Or use the setup wizard to configure everything at once
+shiba setup
 ```
 
 Each environment has isolated: config, issues, OpenAPI specs, Figma cache, and CLI auth.
@@ -79,6 +91,9 @@ shiba commit-msg --type feat --description "add login"         # Generate commit
 ### Core
 
 ```bash
+shiba setup             # Interactive setup wizard (auth + preferences)
+shiba setup --reset     # Reconfigure existing environment
+shiba setup --defaults  # Apply defaults without prompts
 shiba init              # Create .shiba/config.json with GitLab project info
 shiba tui               # Interactive Jira issue navigator
 shiba config show       # Show effective configuration

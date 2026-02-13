@@ -169,6 +169,7 @@ All output is JSON to stdout.
 
 | Command | Purpose | Key Flags |
 |---------|---------|-----------|
+| `shiba setup` | Interactive setup wizard (auth + preferences) | `--reset`, `--defaults`, `--skip-auth` |
 | `shiba init` | Initialize project config | `--force` |
 | `shiba tui` | Interactive task navigator | — |
 | `shiba branch name` | Generate branch name (no git operation) | `--key`, `--description`, `--type` |
@@ -176,6 +177,8 @@ All output is JSON to stdout.
 | `shiba commit-msg` | Generate commit message | `--type`, `--description`, `--key`, `--scope` |
 | `shiba config show` | Show configuration | `--global`, `--project` |
 | `shiba config set` | Set configuration value | `--key`, `--value`, `--global` |
+
+**shiba setup** guides the user through CLI authentication and preference configuration. Use `--reset` to reconfigure an existing environment, `--defaults` to skip prompts and apply defaults, or `--skip-auth` to skip CLI authentication.
 
 **shiba init** detects the GitLab project from git remote and creates `.shiba/config.json`:
 ```json
