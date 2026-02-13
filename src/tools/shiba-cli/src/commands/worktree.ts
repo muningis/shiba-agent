@@ -1,5 +1,5 @@
 import { spawnSync } from "child_process";
-import { existsSync } from "fs";
+import { existsSync, mkdirSync, symlinkSync } from "fs";
 import { join, basename, resolve } from "path";
 import { successResponse, errorResponse, isCliAvailable } from "@shiba-agent/shared";
 import { generateBranchName, getEffectivePreferences } from "../config/resolve.js";
@@ -29,6 +29,41 @@ function getDefaultWorktreePath(branchName: string): string {
   // Replace slashes in branch name with dashes for directory compatibility
   const safeBranchName = branchName.replace(/\//g, "-");
   return resolve(gitRoot, "..", `${repoName}-worktrees`, safeBranchName);
+}
+
+/**
+ * Symlink .claude/settings.local.json from the main worktree into a new worktree.
+ * This ensures user-specific Claude Code settings are shared across worktrees.
+ */
+function symlinkLocalSettings(worktreePath: string): string[] {
+  const gitRoot = getGitRoot();
+  if (!gitRoot) return [];
+
+  const filesToSymlink = ["settings.local.json"];
+  const symlinked: string[] = [];
+
+  for (const file of filesToSymlink) {
+    const source = join(gitRoot, ".claude", file);
+    if (!existsSync(source)) continue;
+
+    const targetDir = join(worktreePath, ".claude");
+    const target = join(targetDir, file);
+
+    if (existsSync(target)) continue;
+
+    try {
+      if (!existsSync(targetDir)) {
+        mkdirSync(targetDir, { recursive: true });
+      }
+      symlinkSync(source, target);
+      symlinked.push(`.claude/${file}`);
+    } catch {
+      // Non-fatal — log but continue
+      console.error(`Warning: Failed to symlink .claude/${file}`);
+    }
+  }
+
+  return symlinked;
 }
 
 export interface WorktreeCreateOpts {
@@ -78,6 +113,9 @@ export async function worktreeCreate(opts: WorktreeCreateOpts): Promise<void> {
     }
   }
 
+  // Symlink .claude/settings.local.json from main worktree
+  const symlinked = symlinkLocalSettings(worktreePath);
+
   // Transition Jira issue (if configured)
   let jiraTransitioned = false;
   const prefs = getEffectivePreferences();
@@ -97,6 +135,7 @@ export async function worktreeCreate(opts: WorktreeCreateOpts): Promise<void> {
     path: worktreePath,
     key: opts.key,
     jiraTransitioned,
+    symlinked,
     hint: `cd ${worktreePath}`,
   });
 }
