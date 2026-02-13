@@ -46,6 +46,30 @@ export interface JiraLinkedIssue {
   status: string;
 }
 
+// Comment from GitHub/GitLab
+export interface IssueComment {
+  author: string;
+  body: string;
+  created: string;
+}
+
+// Full GitHub issue for detail view (fetched on demand)
+export interface GitHubIssueFull extends IssueBasic {
+  description: string | null;
+  labels: string[];
+  assignees: string[];
+  author: string;
+  comments: IssueComment[];
+}
+
+// Full GitLab issue for detail view (fetched on demand)
+export interface GitLabIssueFull extends IssueBasic {
+  description: string | null;
+  labels: string[];
+  assignees: string[];
+  author: string;
+}
+
 // Group of issues from a single tracker
 export interface TrackerGroup {
   tracker: IssueTracker;
