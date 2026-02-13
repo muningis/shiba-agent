@@ -79,6 +79,7 @@ import {
   envMigrate,
 } from "./commands/env.js";
 import { setup } from "./commands/setup.js";
+import { ask } from "./commands/ask.js";
 
 const program = new Command()
   .name("shiba")
@@ -117,6 +118,17 @@ program
   .action(async () => {
     try {
       await tui();
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+program
+  .command("ask <query>")
+  .description("Get help on how to use shiba commands")
+  .action(async (query) => {
+    try {
+      await ask({ query });
     } catch (err) {
       handleCliError(err);
     }
