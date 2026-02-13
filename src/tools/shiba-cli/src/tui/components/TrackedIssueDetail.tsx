@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { ScrollView } from "./ScrollView.js";
 import type { TrackedIssue } from "../../issues/index.js";
 
 interface TrackedIssueDetailProps {
@@ -26,6 +27,7 @@ export function TrackedIssueDetail({ issue }: TrackedIssueDetailProps) {
   const progressColor = PROGRESS_COLORS[issue.progress.status] ?? "white";
 
   return (
+    <ScrollView>
     <Box flexDirection="column" padding={1}>
       {/* Header */}
       <Text bold color="cyan">{issue.issueKey}</Text>
@@ -175,5 +177,6 @@ export function TrackedIssueDetail({ issue }: TrackedIssueDetailProps) {
         </Box>
       )}
     </Box>
+    </ScrollView>
   );
 }

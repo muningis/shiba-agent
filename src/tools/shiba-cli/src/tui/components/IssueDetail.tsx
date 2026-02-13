@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { ScrollView } from "./ScrollView.js";
 import type { JiraIssueFull } from "../types.js";
 
 interface IssueDetailProps {
@@ -8,6 +9,7 @@ interface IssueDetailProps {
 
 export function IssueDetail({ issue }: IssueDetailProps) {
   return (
+    <ScrollView>
     <Box flexDirection="column" padding={1}>
       {/* Header */}
       <Text bold color="cyan">{issue.key}</Text>
@@ -77,5 +79,6 @@ export function IssueDetail({ issue }: IssueDetailProps) {
         </Box>
       )}
     </Box>
+    </ScrollView>
   );
 }

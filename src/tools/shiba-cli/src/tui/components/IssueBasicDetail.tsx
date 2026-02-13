@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { ScrollView } from "./ScrollView.js";
 import type { IssueBasic } from "../types.js";
 
 interface IssueBasicDetailProps {
@@ -10,6 +11,7 @@ export function IssueBasicDetail({ issue }: IssueBasicDetailProps) {
   const sourceLabel = issue.source === "github" ? "GitHub" : "GitLab";
 
   return (
+    <ScrollView>
     <Box flexDirection="column" padding={1}>
       {/* Header */}
       <Text bold color="cyan">{issue.key}</Text>
@@ -47,5 +49,6 @@ export function IssueBasicDetail({ issue }: IssueBasicDetailProps) {
         <Text dimColor>Full details available at the URL above.</Text>
       </Box>
     </Box>
+    </ScrollView>
   );
 }
