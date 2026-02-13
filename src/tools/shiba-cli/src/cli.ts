@@ -19,6 +19,10 @@ import {
   mrComment,
   pipelineStatus,
   pipelineList,
+  glIssueGet,
+  glIssueCreate,
+  glIssueList,
+  glIssueComment,
 } from "./commands/gitlab.js";
 import {
   issueGet,
@@ -374,6 +378,86 @@ gitlab
         ref: opts.ref,
         status: opts.status,
         limit: opts.limit,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+gitlab
+  .command("issue-get")
+  .description("Get GitLab issue details")
+  .requiredOption("--iid <iid>", "Issue internal ID")
+  .option("--project <id>", "Project ID or path")
+  .action(async (opts) => {
+    try {
+      await glIssueGet({
+        iid: opts.iid,
+        project: opts.project,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+gitlab
+  .command("issue-create")
+  .description("Create a GitLab issue")
+  .requiredOption("--title <title>", "Issue title")
+  .option("--description <text>", "Issue description")
+  .option("--assignees <users>", "Comma-separated assignee usernames")
+  .option("--labels <labels>", "Comma-separated labels")
+  .option("--project <id>", "Project ID or path")
+  .action(async (opts) => {
+    try {
+      await glIssueCreate({
+        title: opts.title,
+        description: opts.description,
+        assignees: opts.assignees,
+        labels: opts.labels,
+        project: opts.project,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+gitlab
+  .command("issue-list")
+  .description("List GitLab issues")
+  .option("--state <state>", "Filter by state: open, closed, all", "open")
+  .option("--limit <n>", "Maximum results to return", "20")
+  .option("--author <username>", "Filter by author")
+  .option("--assignee <username>", "Filter by assignee")
+  .option("--labels <labels>", "Filter by labels")
+  .option("--project <id>", "Project ID or path")
+  .action(async (opts) => {
+    try {
+      await glIssueList({
+        state: opts.state,
+        limit: opts.limit,
+        author: opts.author,
+        assignee: opts.assignee,
+        labels: opts.labels,
+        project: opts.project,
+      });
+    } catch (err) {
+      handleCliError(err);
+    }
+  });
+
+gitlab
+  .command("issue-comment")
+  .description("Add a comment to a GitLab issue")
+  .requiredOption("--iid <iid>", "Issue internal ID")
+  .requiredOption("--body <text>", "Comment body")
+  .option("--project <id>", "Project ID or path")
+  .action(async (opts) => {
+    try {
+      await glIssueComment({
+        iid: opts.iid,
+        body: opts.body,
+        project: opts.project,
       });
     } catch (err) {
       handleCliError(err);

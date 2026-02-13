@@ -1,8 +1,21 @@
-import type { GlobalConfig } from "@shiba-agent/shared";
+import type { GlobalConfig, IssueTracker } from "@shiba-agent/shared";
 
-export type { GlobalConfig };
+export type { GlobalConfig, IssueTracker };
 
-// Basic issue for list view (fast fetch)
+// Generic issue for TUI list view (works with Jira, GitHub, GitLab)
+export interface IssueBasic {
+  key: string;        // Jira key (PROJ-123), GitHub/GitLab number as string
+  id: string;         // Unique ID
+  summary: string;    // Title
+  status: string;     // Status/state
+  priority: string;   // Priority (or "None" for GitHub/GitLab)
+  issueType: string;  // Type (or "Issue" for GitHub/GitLab)
+  updated: string;    // Last updated timestamp
+  source: IssueTracker; // Which tracker this came from
+  url?: string;       // Web URL for the issue
+}
+
+// Basic issue for list view (fast fetch) - legacy alias
 export interface JiraIssueBasic {
   key: string;
   id: string;

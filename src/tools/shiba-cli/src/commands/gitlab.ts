@@ -260,3 +260,157 @@ export async function pipelineList(opts: PipelineListOpts): Promise<void> {
     successResponse([]);
   }
 }
+
+// Issue Get
+export interface GlIssueGetOpts {
+  iid: string;
+  project?: string;
+}
+
+export async function glIssueGet(opts: GlIssueGetOpts): Promise<void> {
+  requireCli(GLAB_CLI, GLAB_INSTALL_HINT);
+
+  const args = ["issue", "view", opts.iid, "-F", "json"];
+  if (opts.project) args.push("-R", opts.project);
+
+  const result = execCli(GLAB_CLI, args);
+
+  if (result.exitCode !== 0) {
+    errorResponse("FETCH_FAILED", result.stderr || "Failed to fetch issue");
+  }
+
+  try {
+    const issue = JSON.parse(result.stdout);
+    successResponse({
+      iid: issue.iid,
+      title: issue.title,
+      state: issue.state,
+      description: issue.description,
+      author: issue.author?.username ?? "unknown",
+      assignees: (issue.assignees ?? []).map((a: Record<string, string>) => a.username),
+      labels: issue.labels ?? [],
+      webUrl: issue.web_url,
+      createdAt: issue.created_at,
+      updatedAt: issue.updated_at,
+    });
+  } catch {
+    errorResponse("PARSE_FAILED", "Failed to parse issue response");
+  }
+}
+
+// Issue Create
+export interface GlIssueCreateOpts {
+  title: string;
+  description?: string;
+  assignees?: string;
+  labels?: string;
+  project?: string;
+}
+
+export async function glIssueCreate(opts: GlIssueCreateOpts): Promise<void> {
+  requireCli(GLAB_CLI, GLAB_INSTALL_HINT);
+
+  const args = ["issue", "create", "-t", opts.title, "-y"];
+
+  if (opts.description) args.push("-d", opts.description);
+  if (opts.assignees) args.push("-a", opts.assignees);
+  if (opts.labels) args.push("-l", opts.labels);
+  if (opts.project) args.push("-R", opts.project);
+
+  const result = execCli(GLAB_CLI, args);
+
+  if (result.exitCode !== 0) {
+    errorResponse("CREATE_FAILED", result.stderr || "Failed to create issue");
+  }
+
+  // Parse issue URL and IID from output
+  const urlMatch = result.stdout.match(/https?:\/\/[^\s]+/);
+  const iidMatch = result.stdout.match(/#(\d+)/);
+
+  successResponse({
+    iid: iidMatch ? parseInt(iidMatch[1], 10) : 0,
+    webUrl: urlMatch?.[0] ?? "",
+    title: opts.title,
+  });
+}
+
+// Issue List
+export interface GlIssueListOpts {
+  state: string;
+  limit: string;
+  author?: string;
+  assignee?: string;
+  labels?: string;
+  project?: string;
+}
+
+export async function glIssueList(opts: GlIssueListOpts): Promise<void> {
+  requireCli(GLAB_CLI, GLAB_INSTALL_HINT);
+
+  const args = ["issue", "list", "-F", "json"];
+
+  if (opts.state && opts.state !== "all") {
+    args.push("--state", opts.state === "open" ? "opened" : opts.state);
+  }
+
+  const limit = parseInt(opts.limit, 10);
+  if (limit && limit > 0) {
+    args.push("-P", String(limit));
+  }
+
+  if (opts.author) args.push("--author", opts.author);
+  if (opts.assignee) args.push("--assignee", opts.assignee);
+  if (opts.labels) args.push("-l", opts.labels);
+  if (opts.project) args.push("-R", opts.project);
+
+  const result = execCli(GLAB_CLI, args);
+
+  if (result.exitCode !== 0) {
+    errorResponse("LIST_FAILED", result.stderr || "Failed to list issues");
+  }
+
+  try {
+    const issues = JSON.parse(result.stdout);
+    const summaries = (Array.isArray(issues) ? issues : []).map((issue: Record<string, unknown>) => ({
+      iid: issue.iid as number,
+      title: issue.title as string,
+      state: issue.state as string,
+      author: (issue.author as Record<string, string>)?.username ?? "unknown",
+      assignees: ((issue.assignees as Record<string, string>[]) ?? []).map(a => a.username),
+      labels: issue.labels as string[] ?? [],
+      webUrl: issue.web_url as string,
+      createdAt: issue.created_at as string,
+      updatedAt: issue.updated_at as string,
+    }));
+    successResponse(summaries);
+  } catch {
+    successResponse([]);
+  }
+}
+
+// Issue Comment
+export interface GlIssueCommentOpts {
+  iid: string;
+  body: string;
+  project?: string;
+}
+
+export async function glIssueComment(opts: GlIssueCommentOpts): Promise<void> {
+  requireCli(GLAB_CLI, GLAB_INSTALL_HINT);
+
+  const signedBody = appendCommentSignature(opts.body);
+  const args = ["issue", "note", opts.iid, "-m", signedBody];
+  if (opts.project) args.push("-R", opts.project);
+
+  const result = execCli(GLAB_CLI, args);
+
+  if (result.exitCode !== 0) {
+    errorResponse("COMMENT_FAILED", result.stderr || "Failed to add comment");
+  }
+
+  successResponse({
+    iid: parseInt(opts.iid, 10),
+    body: signedBody,
+    createdAt: new Date().toISOString(),
+  });
+}

@@ -238,6 +238,10 @@ shiba oapi add --name api --url https://api.example.com/openapi.json \
 | `shiba gitlab mr-comment` | Comment on MR | `--project`, `--iid`, `--body` |
 | `shiba gitlab pipeline-status` | Get pipeline + jobs | `--project`, `--pipeline-id` |
 | `shiba gitlab pipeline-list` | List pipelines | `--project`, `--ref`, `--limit` |
+| `shiba gitlab issue-get` | Get issue details | `--iid`, `--project` |
+| `shiba gitlab issue-create` | Create issue | `--title`, `--description`, `--labels` |
+| `shiba gitlab issue-list` | List issues | `--state`, `--limit`, `--assignee` |
+| `shiba gitlab issue-comment` | Comment on issue | `--iid`, `--body`, `--project` |
 
 ### GitHub Commands (`shiba github`)
 

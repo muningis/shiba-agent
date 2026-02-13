@@ -4,16 +4,16 @@ import Spinner from "ink-spinner";
 import { IssueList } from "./components/IssueList.js";
 import { IssueDetail } from "./components/IssueDetail.js";
 import { StatusBar } from "./components/StatusBar.js";
-import { useJiraIssues } from "./hooks/useJiraIssues.js";
+import { useIssues } from "./hooks/useIssues.js";
 import { useFullIssue } from "./hooks/useFullIssue.js";
-import type { JiraIssueBasic, View } from "./types.js";
+import type { IssueBasic, View } from "./types.js";
 
 export function App() {
   const { exit } = useApp();
   const [view, setView] = useState<View>("list");
   const [selectedIssueKey, setSelectedIssueKey] = useState<string | null>(null);
 
-  const { issues, loading, error, refresh } = useJiraIssues();
+  const { issues, loading, error, refresh, source } = useIssues();
   const {
     issue: fullIssue,
     loading: loadingFull,
@@ -38,16 +38,19 @@ export function App() {
     }
   });
 
-  const handleSelectIssue = (issue: JiraIssueBasic) => {
+  const handleSelectIssue = (issue: IssueBasic) => {
     setSelectedIssueKey(issue.key);
     setView("detail");
   };
+
+  // Format source name for display
+  const sourceLabel = source === "jira" ? "Jira" : source === "github" ? "GitHub" : "GitLab";
 
   return (
     <Box flexDirection="column">
       <Box borderStyle="single" borderBottom borderTop={false} borderLeft={false} borderRight={false} paddingX={1}>
         <Text bold color="magenta">Shiba Agent</Text>
-        <Text> - Jira Issues</Text>
+        <Text> - {sourceLabel} Issues</Text>
       </Box>
 
       <Box flexDirection="column" minHeight={10}>

@@ -29,12 +29,15 @@ export interface WorkflowConfig {
   transitions?: WorkflowTransitionsConfig;
 }
 
+export type IssueTracker = "jira" | "github" | "gitlab";
+
 export interface ShibaPreferences {
   defaultJql?: string;
   branchNaming?: BranchNamingConfig;
   commitMessage?: CommitMessageConfig;
   signatures?: SignatureConfig;
   workflow?: WorkflowConfig;
+  issueTracker?: IssueTracker;
 }
 
 // Defaults
@@ -47,6 +50,7 @@ export const DEFAULT_WORKFLOW_TRANSITIONS: Required<WorkflowTransitionsConfig> =
   onMrCreate: "Peer Review",
   onMerge: "Ready for QA",
 };
+export const DEFAULT_ISSUE_TRACKER: IssueTracker = "jira";
 
 // Helper to get default preferences
 export function getDefaultPreferences(): Required<ShibaPreferences> {
@@ -56,5 +60,6 @@ export function getDefaultPreferences(): Required<ShibaPreferences> {
     commitMessage: { style: DEFAULT_COMMIT_STYLE },
     signatures: { shibaSignature: DEFAULT_SHIBA_SIGNATURE },
     workflow: { enabled: DEFAULT_WORKFLOW_ENABLED, transitions: DEFAULT_WORKFLOW_TRANSITIONS },
+    issueTracker: DEFAULT_ISSUE_TRACKER,
   };
 }

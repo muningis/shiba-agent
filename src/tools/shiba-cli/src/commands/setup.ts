@@ -11,6 +11,7 @@ import {
   isCliAvailable,
   getDefaultPreferences,
   type ShibaPreferences,
+  type IssueTracker,
 } from "@shiba-agent/shared";
 import { envInit, envCreate, envUse } from "./env.js";
 
@@ -220,9 +221,38 @@ export async function setup(opts: SetupOpts): Promise<void> {
     token: jiraToken || currentJira.token,
   };
 
+  // Check if Jira is configured
+  const hasJira = !!(config.jira?.host && config.jira?.email && config.jira?.token);
+
   // --- Preferences ---
   printHeader("Preferences");
   const currentPrefs = config.preferences || {};
+
+  // If Jira not configured, offer alternative issue trackers
+  let issueTracker: IssueTracker | undefined = currentPrefs.issueTracker;
+  if (!hasJira) {
+    print("");
+    print("Jira not fully configured. You can use GitHub or GitLab issues instead.");
+    const hasGh = isCliAvailable("gh");
+    const hasGlab = isCliAvailable("glab");
+
+    if (hasGh || hasGlab) {
+      const options: string[] = [];
+      if (hasGh) options.push("github");
+      if (hasGlab) options.push("gitlab");
+
+      const trackerChoice = await prompt(
+        rl,
+        `Default issue tracker (${options.join("/")}${options.length > 0 ? "/" : ""}skip) [${currentPrefs.issueTracker || "skip"}]: `
+      );
+
+      if (trackerChoice && (trackerChoice === "github" || trackerChoice === "gitlab")) {
+        issueTracker = trackerChoice;
+      }
+    }
+  } else {
+    issueTracker = "jira";
+  }
   const defaults = getDefaultPreferences();
 
   // Workflow automation
@@ -297,6 +327,7 @@ export async function setup(opts: SetupOpts): Promise<void> {
       enabled: workflowEnabled === true,
       transitions: workflowTransitions,
     },
+    issueTracker,
   };
 
   // Save
@@ -311,6 +342,9 @@ export async function setup(opts: SetupOpts): Promise<void> {
     print(`  jira.host: ${config.jira.host}`);
     print(`  jira.email: ${config.jira.email}`);
     print(`  jira.token: ${config.jira.token ? "****" : "(not set)"}`);
+  }
+  if (newPrefs.issueTracker) {
+    print(`  issueTracker: ${newPrefs.issueTracker}`);
   }
   print(`  workflow.enabled: ${newPrefs.workflow?.enabled}`);
   if (newPrefs.workflow?.enabled) {

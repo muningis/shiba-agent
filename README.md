@@ -132,6 +132,9 @@ shiba gitlab mr-list --project <id> --state opened
 shiba gitlab mr-merge --project <id> --iid <iid>
 shiba gitlab pipeline-list --project <id>
 shiba gitlab pipeline-status --project <id> --pipeline-id <id>
+shiba gitlab issue-get --iid 123
+shiba gitlab issue-create --title "Bug report"
+shiba gitlab issue-list --state open
 ```
 
 ### GitHub (wraps gh)
@@ -145,7 +148,7 @@ shiba github issue-create --title "Bug report"
 shiba github issue-list --assignee @me
 ```
 
-### Jira (wraps jira-cli)
+### Jira (REST API)
 
 ```bash
 shiba jira issue-get --key PROJ-123

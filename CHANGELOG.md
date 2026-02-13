@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **GitLab issue commands** - `shiba gitlab issue-get`, `issue-create`, `issue-list`, `issue-comment` for GitLab Issues support.
+- **Issue tracker fallback** - When Jira is not configured, TUI and setup wizard suggest using GitHub or GitLab Issues instead.
+- **`issueTracker` preference** - Configure default issue tracker (`jira`, `github`, or `gitlab`) in preferences.
+- **Multi-source TUI** - Terminal UI now supports Jira, GitHub Issues, and GitLab Issues based on configuration.
+
 ## [1.1.0] - 2026-02-13
 
 ### Added

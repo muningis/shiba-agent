@@ -38,19 +38,21 @@ export function getJiraConfig(): JiraClientConfig {
   const email = process.env.JIRA_EMAIL || config.jira?.email;
   const token = process.env.JIRA_API_TOKEN || config.jira?.token;
 
+  const fallbackHint = "\n\nAlternatives:\n- 'shiba github issue-*' for GitHub Issues\n- 'shiba gitlab issue-*' for GitLab Issues";
+
   if (!host) {
     throw new Error(
-      "Jira host not configured. Set JIRA_HOST env var or run 'shiba setup'.",
+      `Jira host not configured. Set JIRA_HOST env var or run 'shiba setup'.${fallbackHint}`,
     );
   }
   if (!email) {
     throw new Error(
-      "Jira email not configured. Set JIRA_EMAIL env var or run 'shiba setup'.",
+      `Jira email not configured. Set JIRA_EMAIL env var or run 'shiba setup'.${fallbackHint}`,
     );
   }
   if (!token) {
     throw new Error(
-      "Jira API token not configured. Set JIRA_API_TOKEN env var or run 'shiba setup'.",
+      `Jira API token not configured. Set JIRA_API_TOKEN env var or run 'shiba setup'.${fallbackHint}`,
     );
   }
 

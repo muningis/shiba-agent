@@ -51,6 +51,7 @@ export {
   DEFAULT_SHIBA_SIGNATURE,
   DEFAULT_WORKFLOW_ENABLED,
   DEFAULT_WORKFLOW_TRANSITIONS,
+  DEFAULT_ISSUE_TRACKER,
 } from "./config/preferences.js";
 export type {
   ShibaPreferences,
@@ -59,6 +60,7 @@ export type {
   SignatureConfig,
   WorkflowConfig,
   WorkflowTransitionsConfig,
+  IssueTracker,
 } from "./config/preferences.js";
 
 // HTTP
