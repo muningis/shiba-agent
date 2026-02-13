@@ -17,7 +17,8 @@ export function isTransientError(error: unknown): boolean {
       msg.includes("etimedout") ||
       msg.includes("timeout") ||
       msg.includes("socket hang up") ||
-      msg.includes("network")
+      msg.includes("network error") ||
+      msg.includes("networkerror")
     ) {
       return true;
     }

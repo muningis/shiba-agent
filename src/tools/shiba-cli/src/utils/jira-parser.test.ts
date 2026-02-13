@@ -109,6 +109,20 @@ Comments:
     expect(result.comments).toHaveLength(1);
   });
 
+  it("preserves blank lines in description", () => {
+    const raw = `Summary: Test
+Description:
+First paragraph
+
+Second paragraph
+
+Third paragraph`;
+
+    const result = parseJiraCliRawOutput("TEST-4", raw);
+
+    expect(result.description).toBe("First paragraph\n\nSecond paragraph\n\nThird paragraph");
+  });
+
   it("handles inline description on same line", () => {
     const raw = `Summary: Quick
 Description: Short inline description

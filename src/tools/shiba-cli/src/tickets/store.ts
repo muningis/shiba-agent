@@ -1,11 +1,12 @@
 import { existsSync, readFileSync, writeFileSync, readdirSync, renameSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
+import { randomUUID } from "crypto";
 import { getTicketsDir, ensureTicketsDir } from "@shiba-agent/shared";
 import type { TicketNotes, TicketNote, NoteCategory, NoteSummary } from "./types.js";
 
 function generateId(): string {
-  return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+  return randomUUID();
 }
 
 function getTicketPath(key: string): string {

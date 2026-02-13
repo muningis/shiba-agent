@@ -101,7 +101,7 @@ export function parseJiraCliRawOutput(key: string, raw: string): JiraCliParsedIs
     } else if (line.startsWith("Comments:") || line.startsWith("# Comments")) {
       inDescription = false;
       inComments = true;
-    } else if (inDescription && line.trim()) {
+    } else if (inDescription) {
       descLines.push(line);
     } else if (inComments) {
       // Parse comments — format varies by jira-cli version
