@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Branch naming presets** - Setup wizard now offers 4 preset branch patterns including conventional-branch style (`{type}/{key}-{description}`), plus custom option.
 - **Commit message presets** - Setup wizard now offers 4 preset commit styles (Conventional Commits, Jira prefix, etc.), plus custom template option.
 - **GitLab MR discussion threading** - New commands `mr-discussion-list`, `mr-discussion-create`, `mr-discussion-reply` for threaded MR comments instead of standalone notes.
+- **Interactive issue creation** - `shiba gitlab issue-create` and `shiba github issue-create` now prompt for title, description, and labels when run without `--title`.
 
 ## [1.1.0] - 2026-02-13
 

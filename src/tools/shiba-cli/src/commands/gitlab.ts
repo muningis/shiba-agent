@@ -411,9 +411,9 @@ export interface GlIssueCreateOpts {
 export async function glIssueCreate(opts: GlIssueCreateOpts): Promise<void> {
   requireCli(GLAB_CLI, GLAB_INSTALL_HINT);
 
-  const args = ["issue", "create", "-t", opts.title, "-y"];
+  // Always include -d to ensure non-interactive mode works
+  const args = ["issue", "create", "-t", opts.title, "-d", opts.description ?? "", "-y"];
 
-  if (opts.description) args.push("-d", opts.description);
   if (opts.assignees) args.push("-a", opts.assignees);
   if (opts.labels) args.push("-l", opts.labels);
   if (opts.project) args.push("-R", opts.project);

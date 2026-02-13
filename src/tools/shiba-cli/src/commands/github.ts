@@ -217,9 +217,9 @@ export interface GhIssueCreateOpts {
 export async function ghIssueCreate(opts: GhIssueCreateOpts): Promise<void> {
   requireCli(GH_CLI, GH_INSTALL_HINT);
 
-  const args = ["issue", "create", "--title", opts.title];
+  // Always include --body to satisfy gh CLI in non-interactive mode
+  const args = ["issue", "create", "--title", opts.title, "--body", opts.body ?? ""];
 
-  if (opts.body) args.push("--body", opts.body);
   if (opts.assignees) args.push("--assignee", opts.assignees);
   if (opts.labels) args.push("--label", opts.labels);
   if (opts.repo) args.push("--repo", opts.repo);

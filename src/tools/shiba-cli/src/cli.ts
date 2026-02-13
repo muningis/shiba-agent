@@ -1,6 +1,34 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { createInterface } from "readline";
+import { stdin, stdout } from "process";
 import { handleCliError } from "@shiba-agent/shared";
+
+function promptInput(question: string): Promise<string> {
+  const rl = createInterface({ input: stdin, output: stdout });
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
+}
+
+function suggestLabels(title: string): string[] {
+  const lower = title.toLowerCase();
+  const labels: string[] = [];
+
+  if (/\b(bug|fix|error|crash|broken|issue)\b/.test(lower)) labels.push("bug");
+  if (/\b(feat|add|new|implement|support)\b/.test(lower)) labels.push("enhancement");
+  if (/\b(doc|readme|comment|docs)\b/.test(lower)) labels.push("documentation");
+  if (/\b(test|spec|coverage)\b/.test(lower)) labels.push("test");
+  if (/\b(refactor|clean|improve|reorganize)\b/.test(lower)) labels.push("refactor");
+  if (/\b(perf|performance|slow|fast|optimize)\b/.test(lower)) labels.push("performance");
+  if (/\b(security|vuln|cve|auth)\b/.test(lower)) labels.push("security");
+  if (/\b(ci|cd|pipeline|workflow|action)\b/.test(lower)) labels.push("ci/cd");
+
+  return labels;
+}
 import { init } from "./commands/init.js";
 import { tui } from "./commands/tui.js";
 import {
@@ -457,19 +485,55 @@ gitlab
 
 gitlab
   .command("issue-create")
-  .description("Create a GitLab issue")
-  .requiredOption("--title <title>", "Issue title")
+  .description("Create a GitLab issue (interactive if no title provided)")
+  .option("--title <title>", "Issue title")
   .option("--description <text>", "Issue description")
   .option("--assignees <users>", "Comma-separated assignee usernames")
   .option("--labels <labels>", "Comma-separated labels")
   .option("--project <id>", "Project ID or path")
   .action(async (opts) => {
     try {
+      let title = opts.title;
+      let description = opts.description;
+      let labels = opts.labels;
+
+      // Interactive prompts if title not provided
+      if (!title) {
+        title = await promptInput("Issue title: ");
+        if (!title.trim()) {
+          process.stderr.write("Error: Title is required\n");
+          process.exit(1);
+        }
+
+        // Suggest labels based on title keywords
+        const suggested = suggestLabels(title);
+
+        // Ask for description
+        const wantsDesc = await promptInput("Add description? (y/n) [n]: ");
+        if (wantsDesc.toLowerCase() === "y" || wantsDesc.toLowerCase() === "yes") {
+          description = await promptInput("Description: ");
+        }
+
+        // Handle labels with suggestions
+        if (suggested.length > 0 && !labels) {
+          const useSuggested = await promptInput(
+            `Suggested labels: ${suggested.join(", ")}. Use these? (y/n) [y]: `
+          );
+          if (useSuggested.toLowerCase() !== "n" && useSuggested.toLowerCase() !== "no") {
+            labels = suggested.join(",");
+          } else {
+            labels = await promptInput("Labels (comma-separated, optional): ");
+          }
+        } else if (!labels) {
+          labels = await promptInput("Labels (comma-separated, optional): ");
+        }
+      }
+
       await glIssueCreate({
-        title: opts.title,
-        description: opts.description,
+        title,
+        description: description ?? "",  // Always pass description
         assignees: opts.assignees,
-        labels: opts.labels,
+        labels: labels || undefined,
         project: opts.project,
       });
     } catch (err) {
@@ -636,19 +700,55 @@ github
 
 github
   .command("issue-create")
-  .description("Create a GitHub issue")
-  .requiredOption("--title <title>", "Issue title")
+  .description("Create a GitHub issue (interactive if no title provided)")
+  .option("--title <title>", "Issue title")
   .option("--body <text>", "Issue body")
   .option("--assignees <users>", "Comma-separated assignees")
   .option("--labels <labels>", "Comma-separated labels")
   .option("--repo <repo>", "Repository in owner/repo format")
   .action(async (opts) => {
     try {
+      let title = opts.title;
+      let body = opts.body;
+      let labels = opts.labels;
+
+      // Interactive prompts if title not provided
+      if (!title) {
+        title = await promptInput("Issue title: ");
+        if (!title.trim()) {
+          process.stderr.write("Error: Title is required\n");
+          process.exit(1);
+        }
+
+        // Suggest labels based on title keywords
+        const suggested = suggestLabels(title);
+
+        // Ask for description
+        const wantsBody = await promptInput("Add description? (y/n) [n]: ");
+        if (wantsBody.toLowerCase() === "y" || wantsBody.toLowerCase() === "yes") {
+          body = await promptInput("Description: ");
+        }
+
+        // Handle labels with suggestions
+        if (suggested.length > 0 && !labels) {
+          const useSuggested = await promptInput(
+            `Suggested labels: ${suggested.join(", ")}. Use these? (y/n) [y]: `
+          );
+          if (useSuggested.toLowerCase() !== "n" && useSuggested.toLowerCase() !== "no") {
+            labels = suggested.join(",");
+          } else {
+            labels = await promptInput("Labels (comma-separated, optional): ");
+          }
+        } else if (!labels) {
+          labels = await promptInput("Labels (comma-separated, optional): ");
+        }
+      }
+
       await ghIssueCreate({
-        title: opts.title,
-        body: opts.body,
+        title,
+        body: body ?? "",  // Always pass body to satisfy gh CLI
         assignees: opts.assignees,
-        labels: opts.labels,
+        labels: labels || undefined,
         repo: opts.repo,
       });
     } catch (err) {
