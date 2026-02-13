@@ -1,11 +1,10 @@
 import { spawnSync } from "child_process";
 import { readFileSync } from "fs";
-import { successResponse, errorResponse } from "@shiba-agent/shared";
-import { resolve, join } from "path";
+import { successResponse, errorResponse, getRepoRoot } from "@shiba-agent/shared";
+import { join } from "path";
 
 export async function update(): Promise<void> {
-  // Shiba is installed at ~/.shiba-agent
-  const shibaDir = resolve(process.env.HOME || "~", ".shiba-agent");
+  const shibaDir = getRepoRoot();
 
   // Capture current version before update
   const beforeResult = spawnSync("shiba", ["--version"], {
