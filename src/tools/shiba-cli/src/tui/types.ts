@@ -52,3 +52,20 @@ export interface CachedTask extends JiraIssueFull {
 }
 
 export type View = "list" | "detail";
+
+// Section navigation
+export type Section = "issues" | "data" | "cache" | "config";
+export type DataEntity = "tracked-issues" | "ticket-notes";
+export type CacheEntity = "openapi" | "figma";
+
+export const SECTIONS: Section[] = ["issues", "data", "cache", "config"];
+
+export function nextSection(current: Section): Section {
+  const idx = SECTIONS.indexOf(current);
+  return SECTIONS[(idx + 1) % SECTIONS.length];
+}
+
+export function prevSection(current: Section): Section {
+  const idx = SECTIONS.indexOf(current);
+  return SECTIONS[(idx - 1 + SECTIONS.length) % SECTIONS.length];
+}
